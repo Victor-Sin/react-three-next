@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Triptych Receiver</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            display: flex;
+            height: 100vh;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        #container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+        .panel {
+            position: relative;
+            height: 100%;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        #left-panel {
+            background-color: #000055;
+        }
+        #center-panel {
+            background-color: #005500;
+        }
+        #right-panel {
+            background-color: #550055;
+        }
+        .image-container {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%; /* Default 16:9 aspect ratio */
+            overflow: hidden;
+        }
+        .panel img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .panel-info {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 5px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 10;
+        }
+        .status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 4px;
+            z-index: 100;
+        }
+        .connection-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #cc0000;
+            margin-right: 5px;
+        }
+        .connected {
+            background-color: #00cc00;
+        }
+        .panel-links {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 4px;
+            z-index: 100;
+        }
+        .panel-button-container {
+            display: flex;
+            justify-content: center;
+        }
+        .panel-button {
+            margin: 0 10px;
+            padding: 10px 20px;
+            background-color: #00cc00;
+            color: #000;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="status">
+        <div>
+            <span class="connection-dot" id="connection-status"></span>
+            <span id="connection-text">Disconnected</span>
+        </div>
+        <div id="debug-info">Waiting for connection...</div>
+    </div>
+    
+    <div id="container">
+        <div id="left-panel" class="panel">
+            <div class="image-container" id="left-container">
+                <img id="left-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Left Panel">
+            </div>
+            <div class="panel-info" id="left-info">Left Panel</div>
+        </div>
+        <div id="center-panel" class="panel">
+            <div class="image-container" id="center-container">
+                <img id="center-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Center Panel">
+            </div>
+            <div class="panel-info" id="center-info">Center Panel</div>
+        </div>
+        <div id="right-panel" class="panel">
+            <div class="image-container" id="right-container">
+                <img id="right-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Right Panel">
+            </div>
+            <div class="panel-info" id="right-info">Right Panel</div>
+        </div>
+    </div>
+
+    <div class="panel-links">
+        <h3>Vista Singoli Pannelli</h3>
+        <div class="panel-button-container">
+            <a href="left-panel.html" class="panel-button left">Pannello Sinistro</a>
+            <a href="center-panel.html" class="panel-button center">Pannello Centrale</a>
+            <a href="right-panel.html" class="panel-button right">Pannello Destro</a>
+        </div>
+    </div>
+
+    <script>
+        // Panel elements
+        const leftImage = document.getElementById('left-image');
+        const centerImage = document.getElementById('center-image');
+        const rightImage = document.getElementById('right-image');
+        
+        const leftContainer = document.getElementById('left-container');
+        const centerContainer = document.getElementById('center-container');
+        const rightContainer = document.getElementById('right-container');
+        
+        const leftInfo = document.getElementById('left-info');
+        const centerInfo = document.getElementById('center-info');
+        const rightInfo = document.getElementById('right-info');
+        
+        // Status elements
+        const connectionStatus = document.getElementById('connection-status');
+        const connectionText = document.getElementById('connection-text');
+        const debugInfo = document.getElementById('debug-info');
+        
+        // Panel aspect ratios (default 16:9)
+        const panelRatios = {
+            left: 9/16, // Height to width ratio
+            center: 9/16,
+            right: 9/16
+        };
+        
+        // Frame counters
+        const frameCounters = { left: 0, center: 0, right: 0 };
+        let lastUpdate = Date.now();
+        
+        // Update FPS counters every second
+        setInterval(() => {
+            const now = Date.now();
+            const elapsed = (now - lastUpdate) / 1000;
+            
+            if (elapsed > 0) {
+                leftInfo.textContent = `Left: ${Math.round(frameCounters.left / elapsed)} FPS`;
+                centerInfo.textContent = `Center: ${Math.round(frameCounters.center / elapsed)} FPS`;
+                rightInfo.textContent = `Right: ${Math.round(frameCounters.right / elapsed)} FPS`;
+                
+                frameCounters.left = 0;
+                frameCounters.center = 0;
+                frameCounters.right = 0;
+                lastUpdate = now;
+            }
+        }, 1000);
+        
+        // Update container aspect ratio
+        function updateAspectRatio(panelId, ratio) {
+            panelRatios[panelId] = ratio;
+            
+            const container = document.getElementById(`${panelId}-container`);
+            if (container) {
+                container.style.paddingBottom = `${ratio * 100}%`;
+            }
+        }
+        
+        // Connect to WebSocket
+        function connectWebSocket() {
+            const hostname = window.location.hostname || 'localhost';
+            const socket = new WebSocket(`ws://${hostname}:8080`);
+            
+            socket.addEventListener('open', function (event) {
+                // console.log('Connected to WebSocket server');
+                connectionStatus.classList.add('connected');
+                connectionText.textContent = 'Connected';
+                debugInfo.textContent = 'Waiting for frames...';
+            });
+            
+            socket.addEventListener('message', function (event) {
+                try {
+                    const message = JSON.parse(event.data);
+                    // console.log(`Received message type: ${message.type}`);
+                    
+                    if (message.type === 'frame') {
+                        // Debug information about the frame, but don't log the entire data
+                        const dataPreview = message.data ? message.data.substring(0, 50) + '...' : 'none';
+                        // console.log(`Frame for ${message.panelId}, data length: ${message.data ? message.data.length : 'none'}`);
+                        // console.log(`Data preview: ${dataPreview}`);
+                        
+                        if (message.data && message.data.startsWith('data:image')) {
+                            console.log(`Valid image data received for ${message.panelId}`);
+                            
+                            // Create a new Image object to ensure it loads properly
+                            const img = new Image();
+                            
+                            img.onload = function() {
+                                console.log(`${message.panelId} image loaded successfully with size ${img.width}x${img.height}`);
+                                // Once loaded, set the proper image src
+                                switch(message.panelId) {
+                                    case 'left':
+                                        leftImage.src = img.src;
+                                        frameCounters.left++;
+                                        break;
+                                    case 'center':
+                                        centerImage.src = img.src;
+                                        frameCounters.center++;
+                                        break;
+                                    case 'right':
+                                        rightImage.src = img.src;
+                                        frameCounters.right++;
+                                        break;
+                                }
+                            };
+                            
+                            img.onerror = function(e) {
+                                console.error(`Failed to load ${message.panelId} image`, e);
+                            };
+                            
+                            // Set the source to trigger loading
+                            img.src = message.data;
+                        } else {
+                            console.error(`Invalid image data for ${message.panelId}`);
+                        }
+                        
+                        // If aspectRatio is provided, update container
+                        if (message.aspectRatio) {
+                            updateAspectRatio(message.panelId, 1 / message.aspectRatio);  // Convert to padding-bottom percentage
+                        }
+                        
+                        debugInfo.textContent = `Last frame: ${message.panelId} at ${new Date().toLocaleTimeString()}`;
+                    }
+                    
+                    // Handle panel info messages
+                    if (message.type === 'panelInfo') {
+                        console.log(`Panel info received for ${message.panelId}:`, message);
+                        updateAspectRatio(message.panelId, message.height / message.width);
+                    }
+                } catch (error) {
+                    console.error('Error processing message:', error);
+                    debugInfo.textContent = `Error: ${error.message}`;
+                }
+            });
+            
+            socket.addEventListener('close', function (event) {
+                console.log('Disconnected from WebSocket server');
+                connectionStatus.classList.remove('connected');
+                connectionText.textContent = 'Disconnected';
+                debugInfo.textContent = 'Connection closed. Reconnecting in 3 seconds...';
+                
+                // Try to reconnect after 3 seconds
+                setTimeout(connectWebSocket, 3000);
+            });
+            
+            socket.addEventListener('error', function (event) {
+                console.error('WebSocket error:', event);
+                connectionStatus.classList.remove('connected');
+                connectionText.textContent = 'Error';
+                debugInfo.textContent = 'Connection error. Check console for details.';
+            });
+            
+            return socket;
+        }
+        
+        // Start connection
+        connectWebSocket();
+    </script>
+</body>
+</html> 

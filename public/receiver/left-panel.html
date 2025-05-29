@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Left Panel Receiver</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            display: flex;
+            height: 100vh;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        #container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .panel-info {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 5px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 10;
+        }
+        .status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 4px;
+            z-index: 100;
+        }
+        .connection-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #cc0000;
+            margin-right: 5px;
+        }
+        .connected {
+            background-color: #00cc00;
+        }
+        img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            image-rendering: high-quality;
+            image-rendering: -webkit-optimize-contrast; /* For WebKit browsers */
+            transform: translateZ(0); /* Force GPU acceleration */
+            will-change: transform; /* Hint for browsers to allocate a separate layer */
+            backface-visibility: hidden; /* Reduce composite layers */
+        }
+        .links {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 4px;
+            z-index: 100;
+        }
+        .links a {
+            color: white;
+            margin: 0 5px;
+        }
+        /* Image processing filters */
+        .high-quality-mode img {
+            filter: none; /* No filter by default */
+        }
+        /* Toggle button for quality modes */
+        .quality-toggle {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 100;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 4px;
+            display: flex;
+            gap: 5px;
+        }
+        .quality-button {
+            padding: 5px 10px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .quality-button.active {
+            background: #00cc00;
+        }
+    </style>
+</head>
+<body>
+    <div class="status">
+        <div>
+            <span class="connection-dot" id="connection-status"></span>
+            <span id="connection-text">Disconnected</span>
+        </div>
+        <div id="debug-info">Waiting for connection...</div>
+    </div>
+    
+    <div id="container">
+        <img id="panel-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Left Panel">
+        <div class="panel-info" id="panel-info">Left Panel</div>
+    </div>
+
+    <div class="links">
+        <a href="index.html">All Panels</a> |
+        <a href="center-panel.html">Center</a> |
+        <a href="right-panel.html">Right</a>
+    </div>
+
+    <div class="quality-toggle">
+        <button class="quality-button active" data-mode="normal">Normale</button>
+        <button class="quality-button" data-mode="sharp">Nitido</button>
+        <button class="quality-button" data-mode="smooth">Morbido</button>
+        <button class="quality-button" data-mode="bright">Luminoso</button>
+        <button class="quality-button" data-mode="dark">Scuro</button>
+    </div>
+
+    <script>
+        // Elements
+        const panelImage = document.getElementById('panel-image');
+        const panelInfo = document.getElementById('panel-info');
+        const connectionStatus = document.getElementById('connection-status');
+        const connectionText = document.getElementById('connection-text');
+        const debugInfo = document.getElementById('debug-info');
+        const container = document.getElementById('container');
+        const qualityButtons = document.querySelectorAll('.quality-button');
+        
+        // Constants
+        const PANEL_ID = 'left';
+        let frameReceived = false;
+        
+        // Frame counter
+        let frameCount = 0;
+        let lastUpdate = Date.now();
+        
+        // Quality mode handlers
+        qualityButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove active class from all buttons
+                qualityButtons.forEach(b => b.classList.remove('active'));
+                // Add active class to clicked button
+                button.classList.add('active');
+                
+                // Get the mode
+                const mode = button.getAttribute('data-mode');
+                
+                // Clear existing filters
+                panelImage.style.filter = 'none';
+                
+                // Apply new filter based on mode
+                switch(mode) {
+                    case 'sharp':
+                        panelImage.style.filter = 'contrast(1.1) saturate(1.1) brightness(1.05)';
+                        addDebugMessage(`Qualità: Nitido`);
+                        break;
+                    case 'smooth':
+                        panelImage.style.filter = 'brightness(1.05) saturate(0.95) blur(0.3px)';
+                        addDebugMessage(`Qualità: Morbido`);
+                        break;
+                    case 'bright':
+                        panelImage.style.filter = 'brightness(1.3) contrast(1.1)';
+                        addDebugMessage(`Qualità: Luminoso`);
+                        break;
+                    case 'dark':
+                        panelImage.style.filter = 'brightness(0.8) contrast(1.2)';
+                        addDebugMessage(`Qualità: Scuro`);
+                        break;
+                    default:
+                        addDebugMessage(`Qualità: Normale`);
+                        break;
+                }
+            });
+        });
+        
+        // Add debug message function
+        function addDebugMessage(message, isError = false) {
+            console.log(message);
+            const timestamp = new Date().toLocaleTimeString();
+            debugInfo.innerHTML = `[${timestamp}] ${message}<br>` + (debugInfo.innerHTML.length > 500 ? debugInfo.innerHTML.substring(0, 500) + '...' : debugInfo.innerHTML);
+            
+            if (isError) {
+                debugInfo.style.color = 'red';
+                setTimeout(() => { debugInfo.style.color = 'white'; }, 3000);
+            }
+        }
+        
+        // Handle WebP support
+        function supportsWebP() {
+            const canvas = document.createElement('canvas');
+            if (!canvas.getContext || !canvas.getContext('2d')) {
+                return false;
+            }
+            return canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+        }
+        
+        // Update FPS counter every second
+        setInterval(() => {
+            const now = Date.now();
+            const elapsed = (now - lastUpdate) / 1000;
+            
+            if (elapsed > 0) {
+                panelInfo.textContent = `Left Panel: ${Math.round(frameCount / elapsed)} FPS`;
+                frameCount = 0;
+                lastUpdate = now;
+            }
+            
+            // If no frames received for 5 seconds, show warning
+            if (frameReceived && now - lastUpdate > 5000) {
+                addDebugMessage('No frames received for 5+ seconds', true);
+            }
+        }, 1000);
+        
+        // Connect to WebSocket
+        function connectWebSocket() {
+            const hostname = window.location.hostname || 'localhost';
+            const socket = new WebSocket(`ws://${hostname}:8080`);
+            
+            addDebugMessage(`Connecting to WebSocket at ${hostname}:8080...`);
+            
+            socket.addEventListener('open', function (event) {
+                addDebugMessage('Connected to WebSocket server');
+                connectionStatus.classList.add('connected');
+                connectionText.textContent = 'Connected';
+            });
+            
+            socket.addEventListener('message', function (event) {
+                try {
+                    const message = JSON.parse(event.data);
+                    
+                    // Only process messages for this panel
+                    if (message.panelId === PANEL_ID) {
+                        if (message.type === 'frame') {
+                            if (message.data && message.data.startsWith('data:image')) {
+                                // Create a new Image object to ensure it loads properly
+                                const img = new Image();
+                                
+                                img.onload = function() {
+                                    // Apply the new image
+                                    panelImage.src = img.src;
+                                    frameCount++;
+                                    frameReceived = true;
+                                    lastUpdate = Date.now();
+                                    
+                                    // Log info about the received frame
+                                    const quality = message.quality || 'standard';
+                                    const dimensions = `${img.width}x${img.height}`;
+                                    addDebugMessage(`Frame ricevuto: ${dimensions} (Qualità: ${quality})`);
+                                    
+                                    // Update container aspect ratio if needed
+                                    if (message.aspectRatio) {
+                                        const aspectRatio = message.aspectRatio;
+                                        // Using proper aspect ratio handling
+                                        container.style.aspectRatio = aspectRatio;
+                                    }
+                                };
+                                
+                                img.onerror = function(e) {
+                                    addDebugMessage(`Failed to load image: ${e}`, true);
+                                };
+                                
+                                // Set the source to trigger loading
+                                img.src = message.data;
+                            } else {
+                                addDebugMessage(`Invalid image data received: ${message.data ? message.data.substring(0, 30) + '...' : 'none'}`, true);
+                            }
+                        } else {
+                            addDebugMessage(`Received message of type: ${message.type}`);
+                        }
+                    }
+                } catch (error) {
+                    addDebugMessage(`Error processing message: ${error.message}`, true);
+                    console.error('Error details:', error);
+                }
+            });
+            
+            socket.addEventListener('close', function (event) {
+                addDebugMessage('Disconnected from WebSocket server', true);
+                connectionStatus.classList.remove('connected');
+                connectionText.textContent = 'Disconnected';
+                
+                // Try to reconnect after 3 seconds
+                setTimeout(connectWebSocket, 3000);
+            });
+            
+            socket.addEventListener('error', function (event) {
+                addDebugMessage('WebSocket error occurred', true);
+                console.error('WebSocket error:', event);
+                connectionStatus.classList.remove('connected');
+                connectionText.textContent = 'Error';
+            });
+            
+            return socket;
+        }
+        
+        // Start connection on page load
+        connectWebSocket();
+        
+        // Check if browser supports WebP
+        if (supportsWebP()) {
+            addDebugMessage('Browser supports WebP format (migliore qualità)');
+        } else {
+            addDebugMessage('Browser does not support WebP format');
+        }
+        
+        // Check if Madmapper might be driving this
+        if (window.parent !== window) {
+            addDebugMessage('Running in iframe/embedded mode - might be in Mad Mapper!');
+            document.body.style.background = 'transparent';
+        }
+    </script>
+</body>
+</html> 

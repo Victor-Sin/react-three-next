@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Right Panel Receiver</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            display: flex;
+            height: 100vh;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        #container {
+            position: relative;
+            width: 30rem;
+            /* height: 100%; */
+            overflow: hidden;
+            aspect-ratio: 73/140;
+        }
+        .panel-info {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 5px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 10;
+        }
+        .status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 4px;
+            z-index: 100;
+        }
+        .connection-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #cc0000;
+            margin-right: 5px;
+        }
+        .connected {
+            background-color: #00cc00;
+        }
+        img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* object-fit: contain; */
+            aspect-ratio: 73/140;
+        }
+        .links {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 4px;
+            z-index: 100;
+        }
+        .links a {
+            color: white;
+            margin: 0 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="status">
+        <div>
+            <span class="connection-dot" id="connection-status"></span>
+            <span id="connection-text">Disconnected</span>
+        </div>
+        <div id="debug-info">Waiting for connection...</div>
+    </div>
+    
+    <div id="container">
+        <img id="panel-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Right Panel">
+        <div class="panel-info" id="panel-info">Right Panel</div>
+    </div>
+
+    <div class="links">
+        <a href="index.html">All Panels</a> |
+        <a href="left-panel.html">Left</a> |
+        <a href="center-panel.html">Center</a>
+    </div>
+
+    <script>
+        // Elements
+        const panelImage = document.getElementById('panel-image');
+        const panelInfo = document.getElementById('panel-info');
+        const connectionStatus = document.getElementById('connection-status');
+        const connectionText = document.getElementById('connection-text');
+        const debugInfo = document.getElementById('debug-info');
+        
+        // Constants
+        const PANEL_ID = 'right';
+        
+        // Frame counter
+        let frameCount = 0;
+        let lastUpdate = Date.now();
+        
+        // Update FPS counter every second
+        setInterval(() => {
+            const now = Date.now();
+            const elapsed = (now - lastUpdate) / 1000;
+            
+            if (elapsed > 0) {
+                panelInfo.textContent = `Right Panel: ${Math.round(frameCount / elapsed)} FPS`;
+                frameCount = 0;
+                lastUpdate = now;
+            }
+        }, 1000);
+        
+        // Connect to WebSocket
+        function connectWebSocket() {
+            const hostname = window.location.hostname || 'localhost';
+            const socket = new WebSocket(`ws://${hostname}:8080`);
+            
+            socket.addEventListener('open', function (event) {
+                console.log('Connected to WebSocket server');
+                connectionStatus.classList.add('connected');
+                connectionText.textContent = 'Connected';
+                debugInfo.textContent = 'Waiting for frames...';
+            });
+            
+            socket.addEventListener('message', function (event) {
+                try {
+                    const message = JSON.parse(event.data);
+                    
+                    // Only process messages for this panel
+                    if (message.panelId === PANEL_ID) {
+                        if (message.type === 'frame') {
+                            if (message.data && message.data.startsWith('data:image')) {
+                                // Create a new Image object to ensure it loads properly
+                                const img = new Image();
+                                
+                                img.onload = function() {
+                                    panelImage.src = img.src;
+                                    frameCount++;
+                                    debugInfo.textContent = `Last frame: ${new Date().toLocaleTimeString()} - ${img.width}x${img.height}`;
+                                };
+                                
+                                img.onerror = function(e) {
+                                    console.error(`Failed to load image`, e);
+                                    debugInfo.textContent = 'Error loading image';
+                                };
+                                
+                                img.src = message.data;
+                            } else {
+                                console.error(`Invalid image data received`);
+                                debugInfo.textContent = 'Invalid image data';
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error processing message:', error);
+                    debugInfo.textContent = `Error: ${error.message}`;
+                }
+            });
+            
+            socket.addEventListener('close', function (event) {
+                console.log('Disconnected from WebSocket server');
+                connectionStatus.classList.remove('connected');
+                connectionText.textContent = 'Disconnected';
+                debugInfo.textContent = 'Connection closed. Reconnecting in 3 seconds...';
+                
+                // Try to reconnect after 3 seconds
+                setTimeout(connectWebSocket, 3000);
+            });
+            
+            socket.addEventListener('error', function (event) {
+                console.error('WebSocket error:', event);
+                connectionStatus.classList.remove('connected');
+                connectionText.textContent = 'Error';
+                debugInfo.textContent = 'Connection error. Check console for details.';
+            });
+            
+            return socket;
+        }
+        
+        // Start connection on page load
+        connectWebSocket();
+    </script>
+</body>
+</html> 
