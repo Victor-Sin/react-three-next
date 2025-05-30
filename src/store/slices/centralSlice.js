@@ -45,7 +45,6 @@ const centralSlice = createSlice({
       state.storySegment = `${action.payload}_story`
       state.sunReaction = 'neutral'
       state.moonReaction = 'neutral'
-      state.transition = 'fade'
       state.lastImage = state.currentImage
 //      state.currentImage = imageIndexMap[action.payload] ?? 0
     },
@@ -55,9 +54,9 @@ const centralSlice = createSlice({
       state.placedObject = null
       state.sunReaction = null
       state.moonReaction = null
-      state.transition = null
       state.lastImage = 0
       state.currentImage = 0
+      state.mode = 'map'
     },
     setTransition: (state, action) => {
       state.transitions = {

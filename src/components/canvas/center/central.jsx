@@ -6,14 +6,8 @@ import { useDispatch, useSelector } from 'react-redux'
 import { placeObject, resetScene, nextChapter, setMode } from '@/store/slices/centralSlice'
 import React, { useCallback, useMemo, useEffect, useState, useRef } from 'react'
 import { Scene } from './elements/scene'
+import { Placeholder } from './elements/Placeholder'
 import { gsap } from 'gsap'
-
-// Sample story data - replace with your actual data structure
-const storyData = {
-    sun: { /* story content for sun */ },
-    bridge: { /* story content for bridge */ },
-    fire: { /* story content for fire */ }
-}
 
 const objectList = ['sun', 'bridge', 'fire']
 
@@ -182,28 +176,6 @@ export const Central = React.memo((props) => {
         })
     }, [dispatch])
 
-    const currentStory = useMemo(() => {
-        console.log('[Central] Story data updated at', Date.now() - initTime.current, 'ms')
-        return placedObject ? storyData[placedObject] : null
-    }, [placedObject])
-
-    const buttonStyle = useMemo(() => ({
-        padding: '8px 24px',
-        borderRadius: 20,
-        background: '#1976d2',
-        color: '#fff',
-        border: 'none',
-        fontWeight: 'bold',
-        fontSize: 16,
-        cursor: 'pointer',
-        boxShadow: '0 2px 8px #1976d288',
-        transition: 'all 0.2s ease-in-out',
-        ':hover': {
-            transform: 'scale(1.05)',
-            boxShadow: '0 4px 12px #1976d2aa'
-        }
-    }), [])
-
     useEffect(() => {
         console.log('[Central] Component mounted at', Date.now() - initTime.current, 'ms')
         return () => {
@@ -227,6 +199,34 @@ export const Central = React.memo((props) => {
                 animationType={placedObject}
                 onAnimationEnd={isStoryActive ? handleAnimationEnd : undefined}
             />
+            {!isStoryActive && showPlaceholders && (
+                <>
+                    <Placeholder
+                        ref={el => placeholderRefs.current.sun = el}
+                        position={[-1, 0, 2]}
+                        onClick={handleSquareClick('sun')}
+                        color="#ff6b6b"
+                        scale={0}
+                        opacity={0}
+                    />
+                    <Placeholder
+                        ref={el => placeholderRefs.current.bridge = el}
+                        position={[0, -1, 2]}
+                        onClick={handleSquareClick('bridge')}
+                        color="#ff6b6b"
+                        scale={0}
+                        opacity={0}
+                    />
+                    <Placeholder
+                        ref={el => placeholderRefs.current.fire = el}
+                        position={[1, 0, 2]}
+                        onClick={handleSquareClick('fire')}
+                        color="#ff6b6b"
+                        scale={0}
+                        opacity={0}
+                    />
+                </>
+            )}
         </group>
     )
 })
