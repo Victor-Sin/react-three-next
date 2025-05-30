@@ -1,7 +1,8 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { Suspense } from 'react'
+import { useEffect, Suspense, useState } from 'react'
+import { useFrame } from '@react-three/fiber'
 
 const View = dynamic(() => import('@/components/canvas/View').then((mod) => mod.View), {
   ssr: false,
@@ -30,7 +31,7 @@ export default function Page() {
       <div className='flex h-screen w-screen items-center justify-center bg-orange-100'>
         <div className='mx-auto flex w-full max-w-6xl gap-2'>
           {/* left */}
-          <div className='left-panel relative aspect-[73/140] w-1/5 bg-red-500' id="left-panel" data-panel="left">
+          <div className='left-panel relative aspect-[73/140] w-1/5 ' id="left-panel" data-panel="left">
             <View className='absolute inset-0 size-full' panelId="left">
               <Suspense fallback={null}>
                 <LeftPanel />
@@ -41,7 +42,7 @@ export default function Page() {
           </div>
 
           {/* central */}
-          <div className='center-panel relative aspect-[3/2] w-3/5 bg-blue-500' id="center-panel" data-panel="center">
+          <div className='center-panel relative aspect-[3/2] w-3/5 ' id="center-panel" data-panel="center">
             <View className='absolute inset-0 size-full' panelId="center">
               <Suspense fallback={null}>
                 <Central />
@@ -52,7 +53,7 @@ export default function Page() {
           </div>
 
           {/* right */}
-          <div className='right-panel relative aspect-[73/140] w-1/5 bg-green-500' id="right-panel" data-panel="right">
+          <div className='right-panel relative aspect-[73/140] w-1/5 ' id="right-panel" data-panel="right">
             <View className='absolute inset-0 size-full' panelId="right">
               <Suspense fallback={null}>
                 <RightPanel />

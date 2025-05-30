@@ -1,10 +1,13 @@
 import { shaderMaterial } from '@react-three/drei'
 import * as THREE from 'three'
 import { useState, useEffect, useRef } from 'react'
-import { extend,useFrame } from '@react-three/fiber'
+import { extend,useFrame, useThree } from '@react-three/fiber'
 import { useDispatch, useSelector } from 'react-redux'
 import { setTransition, setSideTransition } from '@/store/slices/centralSlice'
 import { gsap as GSAP } from 'gsap';
+import { useTexture } from '@react-three/drei'
+import GPGPU from '@/hooks/gpgpu'
+import img from '../../../../../public/img/center/map/chapter_one/map_lefta.png'
 
 export const BurnTransitionMaterial = shaderMaterial(
   {
@@ -17,6 +20,8 @@ export const BurnTransitionMaterial = shaderMaterial(
     uProgressCinematic: 0.0,
     uResolution: new THREE.Vector2(1, 1),
     uEdge: 0.05,
+    uTextureNoise: new THREE.Texture(),
+    uTextureSplatting: new THREE.Texture(),
   },
   // vertex shader
   `
@@ -37,6 +42,8 @@ export const BurnTransitionMaterial = shaderMaterial(
     uniform vec2 uResolution;
     uniform float uEdge;
     varying vec2 vUv;
+    uniform sampler2D uTextureNoise;
+    uniform sampler2D uTextureSplatting;
 
     float getDiffMap(vec2 uv) { 
       float diff = distance(uv, vec2(0.5, 0.5));
@@ -54,16 +61,27 @@ export const BurnTransitionMaterial = shaderMaterial(
       vec2 uv = vUv;
       vec2 uvCinematic = vUv;
 
-      vec4 colorMapA = texture2D(uTextureMapA, uv);
-      vec4 colorMapB = texture2D(uTextureMapB, uv);
+     
       vec4 colorCinematic = texture2D(uTextureCinematic, uvCinematic);
+      vec4 colorNoise = texture2D(uTextureNoise, uv);
+      vec4 splatting = texture2D(uTextureSplatting, uv);
+      vec2 uvMapA = uv;
 
+      if(splatting.r == 1. && splatting.g == 0. && splatting.a >0.) {
+       uvMapA.xy += sin(uTime)*0.0025*colorNoise.r;
+      }
+
+      vec4 colorMapA = texture2D(uTextureMapA, uvMapA);
+      vec4 colorMapB = texture2D(uTextureMapB, uvMapA);
       vec4 map = mix(colorMapA, colorMapB, getDiffMap(uv));
+     
+       
 
       vec4 final = mix(map, colorCinematic, getDiffCinematic(uvCinematic));
 
-      gl_FragColor = vec4(final.rgb, 1.0);
+      gl_FragColor = final;
       
+
     }
   `
 )
@@ -74,19 +92,31 @@ extend({ BurnTransitionMaterial })
 export const BurnTransition = ({ tmp_name, uTextureMapA, uTextureMapB, uTextureCinematic}) => {
 
   const isLaunchedRef = useRef(false)
+  const { gl } = useThree()
   const materialRef = useRef(null)
   const [name, setName] = useState(tmp_name)
   const dispatch = useDispatch();
   const transition = useSelector(state => state.central.transitions);
   const sideTransition = useSelector(state => state.central.sideTransitions);
   const mode = useSelector(state => state.central.mode);
+  console.log(img, 'img')
+  const mapTexture = useTexture('/img/center/map/chapter_one/textureSplatting.png')
+  console.log(mapTexture, 'mapTexture')
+  const [gpgpu, setGPGPU] = useState(null)  
 
+
+  
+   
   // Determine if this is a side panel or central panel
   const isSidePanel = tmp_name !== 'central'
   const currentTransition = isSidePanel ? sideTransition : transition
   const setTransitionAction = isSidePanel ? setSideTransition : setTransition
 
   useEffect(() => {
+    const gpgpu = new GPGPU(gl)
+    setGPGPU(gpgpu)
+
+
     if (isLaunchedRef.current) {
       console.log(`[${tmp_name}] BurnTransition effect triggered`, { 
         currentTransition, 
@@ -155,6 +185,6 @@ export const BurnTransition = ({ tmp_name, uTextureMapA, uTextureMapB, uTextureC
   })
 
   return (
-      <burnTransitionMaterial ref={materialRef} uTextureMapA={uTextureMapA} uTextureMapB={uTextureMapB} uTextureCinematic={uTextureCinematic} name={name} />
+      <burnTransitionMaterial ref={materialRef} uTextureSplatting={mapTexture} uTextureNoise={gpgpu && gpgpu.getTexture() } uTextureMapA={uTextureMapA} uTextureMapB={uTextureMapB} uTextureCinematic={uTextureCinematic} name={name} />
   )
 }

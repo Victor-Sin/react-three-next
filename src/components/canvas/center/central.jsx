@@ -1,15 +1,16 @@
 'use client'
 
-import { useThree } from '@react-three/fiber'
+import { useThree, useFrame } from '@react-three/fiber'
 import { useDispatch, useSelector } from 'react-redux'
 import { placeObject, setMode, nextChapter } from '@/store/slices/centralSlice'
 import React, { useCallback, useEffect, useState, useRef } from 'react'
 import { Scene } from './elements/scene'
 import { Placeholder } from './elements/Placeholder'
 import { gsap } from 'gsap'
+import GPGPU from '@/hooks/gpgpu'
 
 export const Central = React.memo((props) => {
-    const { viewport } = useThree()
+    const { viewport, gl } = useThree()
     const dispatch = useDispatch()
     const { isStoryActive, placedObject, currentImage, lastImage, mode, allScenesCompleted, completedScenes } = useSelector(state => state.central)
     const [showPlaceholders, setShowPlaceholders] = useState(false)
@@ -21,6 +22,9 @@ export const Central = React.memo((props) => {
     })
     const [refsReady, setRefsReady] = useState(false)
     const [showChapterTransition, setShowChapterTransition] = useState(false)
+    const [gpgpu, setGPGPU] = useState(null)
+    const gpgpuRef = useRef(null)
+
     const aspect = 3000 / 2000;
     const baseHeight = viewport.height;
     const baseWidth = baseHeight * aspect;
@@ -28,6 +32,28 @@ export const Central = React.memo((props) => {
 
     console.log('[Central] Component initialized at', Date.now() - initTime.current, 'ms')
     console.log('[Central] Completed scenes:', completedScenes, 'All completed:', allScenesCompleted)
+
+    // Initialize GPGPU when renderer is available
+    useEffect(() => {
+        if (gl && !gpgpuRef.current) {
+            try {
+                const gpgpuInstance = new GPGPU(gl)
+                gpgpuRef.current = gpgpuInstance
+                setGPGPU(gpgpuInstance)
+                console.log('GPGPU instance created successfully')
+            } catch (error) {
+                console.error('Failed to create GPGPU instance:', error)
+            }
+        }
+
+        return () => {
+            if (gpgpuRef.current) {
+                gpgpuRef.current.dispose()
+                gpgpuRef.current = null
+                setGPGPU(null)
+            }
+        }
+    }, [gl])
 
     // Check if all visible refs are ready
     useEffect(() => {
@@ -144,6 +170,13 @@ export const Central = React.memo((props) => {
             gsap.killTweensOf(placeholderRefs.current)
         }
     }, [])
+
+    useFrame((state, delta) => {
+        if (gpgpu && gpgpu.isInitialized) {
+            gpgpu.render(delta)
+            
+        }
+    });
 
     return (
         <group position={[0, 0, 0]}>
