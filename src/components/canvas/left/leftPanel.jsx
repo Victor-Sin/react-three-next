@@ -12,19 +12,12 @@ import { VideoTexture } from 'three'
 export const LeftPanel = (props) => {
     const leftPanelRef = useRef()
     const videoRef = useRef()
-    const { viewport, size } = useThree()
-    const { storySegment, isStoryActive, mode, meshLoading } = useSelector(state => state.central)
+    const { viewport } = useThree()
+    const { mode, meshLoading } = useSelector(state => state.central)
     const { textures, isLoaded, essentialLoaded } = useTextures()
     const dispatch = useDispatch()
     const [videoTexture, setVideoTexture] = useState(null)
-    const [isVideoReady, setIsVideoReady] = useState(false)
     const initTime = useRef(Date.now())
-
-    // Use a fixed aspect ratio for the left panel (1040/2000)
-    const aspect = 1040 / 2000;
-    const baseHeight = viewport.height;
-    const baseWidth = baseHeight * aspect;
-    const defaultScale = [baseWidth, baseHeight, 1];
 
     // Fixed values instead of Leva controls
     const scale = [3.99, 7.99, 1];
@@ -33,7 +26,7 @@ export const LeftPanel = (props) => {
     const { mapTexture, blackTexture } = useMemo(() => {
         console.log('[LeftPanel] Initializing textures at', Date.now() - initTime.current, 'ms')
         const mapTexture = textures['/img/center/map/chapter_one/map_lefta.png']
-        const blackTexture = textures['/img/center/map/chapter_one/map_lefta.png']
+        const blackTexture = textures['/img/center/map/chapter_one/map_lefta.png'] // Use same texture for both
         return { mapTexture, blackTexture }
     }, [textures])
 
@@ -55,7 +48,6 @@ export const LeftPanel = (props) => {
                 texture.minFilter = THREE.LinearFilter
                 texture.magFilter = THREE.LinearFilter
                 setVideoTexture(texture)
-                setIsVideoReady(true)
             })
 
             video.play().then(() => {
@@ -66,16 +58,19 @@ export const LeftPanel = (props) => {
         }
     }, [mode, videoTexture])
 
-    // Cleanup video
+    // Clean up video when returning to map mode
     useEffect(() => {
-        return () => {
-            if (videoRef.current) {
-                videoRef.current.pause()
-                videoRef.current.src = ''
-                videoRef.current.load()
-            }
+        if (mode === 'map' && videoRef.current) {
+            console.log('[LeftPanel] Cleaning up video - returning to map mode')
+            videoRef.current.pause()
+            videoRef.current.src = ''
+            videoRef.current.load()
+            // Don't immediately set to null, let the transition complete first
+            setTimeout(() => {
+                setVideoTexture(null)
+            }, 100)
         }
-    }, [])
+    }, [mode])
 
     // Effect to handle mesh loading
     useEffect(() => {
@@ -109,18 +104,15 @@ export const LeftPanel = (props) => {
         )
     }
 
-    const textureOne = mapTexture
-    const textureTwo = blackTexture
-
     return (
         <group>
             <mesh ref={leftPanelRef} scale={scale}>
                 <planeGeometry args={[0.57, 0.57]} />
                 <BurnTransition
                     tmp_name="left"
-                    uTextureMapA={textureOne}
-                    uTextureMapB={textureTwo}
-                    uTextureCinematic={videoTexture}
+                    uTextureMapA={mapTexture}
+                    uTextureMapB={blackTexture}
+                    uTextureCinematic={videoTexture || mapTexture}
                 />
             </mesh>
         </group>

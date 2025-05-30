@@ -12,19 +12,12 @@ import { VideoTexture } from 'three'
 export const RightPanel = (props) => {
     const rightPanelRef = useRef()
     const videoRef = useRef()
-    const { viewport, size } = useThree()
-    const { storySegment, isStoryActive, mode, meshLoading } = useSelector(state => state.central)
+    const { viewport } = useThree()
+    const { mode, meshLoading } = useSelector(state => state.central)
     const { textures, isLoaded, essentialLoaded } = useTextures()
     const dispatch = useDispatch()
     const [videoTexture, setVideoTexture] = useState(null)
-    const [isVideoReady, setIsVideoReady] = useState(false)
     const initTime = useRef(Date.now())
-
-    // Use a fixed aspect ratio for the right panel (1040/2000)
-    const aspect = 1040 / 2000;
-    const baseHeight = viewport.height;
-    const baseWidth = baseHeight * aspect;
-    const defaultScale = [baseWidth, baseHeight, 1];
 
     // Fixed values instead of Leva controls
     const scale = [3.99, 7.99, 1];
@@ -33,7 +26,7 @@ export const RightPanel = (props) => {
     const { mapTexture, blackTexture } = useMemo(() => {
         console.log('[RightPanel] Initializing textures at', Date.now() - initTime.current, 'ms')
         const mapTexture = textures['/img/center/map/chapter_one/map_righta.png']
-        const blackTexture = textures['/img/center/map/chapter_one/map_righta.png']
+        const blackTexture = textures['/img/center/map/chapter_one/map_righta.png'] // Use same texture for both
         return { mapTexture, blackTexture }
     }, [textures])
 
@@ -55,7 +48,6 @@ export const RightPanel = (props) => {
                 texture.minFilter = THREE.LinearFilter
                 texture.magFilter = THREE.LinearFilter
                 setVideoTexture(texture)
-                setIsVideoReady(true)
             })
 
             video.play().then(() => {
@@ -66,16 +58,19 @@ export const RightPanel = (props) => {
         }
     }, [mode, videoTexture])
 
-    // Cleanup video
+    // Clean up video when returning to map mode
     useEffect(() => {
-        return () => {
-            if (videoRef.current) {
-                videoRef.current.pause()
-                videoRef.current.src = ''
-                videoRef.current.load()
-            }
+        if (mode === 'map' && videoRef.current) {
+            console.log('[RightPanel] Cleaning up video - returning to map mode')
+            videoRef.current.pause()
+            videoRef.current.src = ''
+            videoRef.current.load()
+            // Don't immediately set to null, let the transition complete first
+            setTimeout(() => {
+                setVideoTexture(null)
+            }, 100)
         }
-    }, [])
+    }, [mode])
 
     // Effect to handle mesh loading
     useEffect(() => {
@@ -117,7 +112,7 @@ export const RightPanel = (props) => {
                     tmp_name="right"
                     uTextureMapA={mapTexture}
                     uTextureMapB={blackTexture}
-                    uTextureCinematic={videoTexture}
+                    uTextureCinematic={videoTexture || mapTexture}
                 />
             </mesh>
         </group>

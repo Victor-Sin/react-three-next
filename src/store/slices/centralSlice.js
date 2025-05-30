@@ -10,8 +10,10 @@ const initialState = {
   currentImage: 0,
   lastImage: 0,
   placedObjects: [],
+  completedScenes: [],
   chapter: 0,
   mode: 'map',
+  allScenesCompleted: false,
   transitions: {
     isTransitioning: false,
     shouldTransition: false,
@@ -58,6 +60,22 @@ const centralSlice = createSlice({
       state.currentImage = 0
       state.mode = 'map'
     },
+    completeScene: (state, action) => {
+      const sceneType = action.payload
+      if (!state.completedScenes.includes(sceneType)) {
+        state.completedScenes.push(sceneType)
+      }
+      
+      // Check if all three scenes are completed
+      const requiredScenes = ['sun', 'bridge', 'fire']
+      const allCompleted = requiredScenes.every(scene => 
+        state.completedScenes.includes(scene)
+      )
+      
+      if (allCompleted && !state.allScenesCompleted) {
+        state.allScenesCompleted = true
+      }
+    },
     setTransition: (state, action) => {
       state.transitions = {
         ...state.transitions,
@@ -81,6 +99,8 @@ const centralSlice = createSlice({
     nextChapter: (state) => {
       state.chapter += 1
       state.placedObjects = []
+      state.completedScenes = []
+      state.allScenesCompleted = false
       state.currentImage = 0
       state.lastImage = 0
     },
@@ -99,6 +119,7 @@ const centralSlice = createSlice({
 export const {
   placeObject,
   resetScene,
+  completeScene,
   setTransition,
   setSideTransition,
   setReactions,

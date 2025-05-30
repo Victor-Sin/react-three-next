@@ -1,179 +1,139 @@
 'use client'
 
-import * as THREE from 'three'
 import { useThree } from '@react-three/fiber'
 import { useDispatch, useSelector } from 'react-redux'
-import { placeObject, resetScene, nextChapter, setMode } from '@/store/slices/centralSlice'
-import React, { useCallback, useMemo, useEffect, useState, useRef } from 'react'
+import { placeObject, setMode, nextChapter } from '@/store/slices/centralSlice'
+import React, { useCallback, useEffect, useState, useRef } from 'react'
 import { Scene } from './elements/scene'
 import { Placeholder } from './elements/Placeholder'
 import { gsap } from 'gsap'
 
-const objectList = ['sun', 'bridge', 'fire']
-
 export const Central = React.memo((props) => {
-    const { viewport, size } = useThree()
+    const { viewport } = useThree()
     const dispatch = useDispatch()
-    const { isStoryActive, storySegment, placedObject, currentImage, lastImage, placedObjects, chapter } = useSelector(state => state.central)
-    const allPlaced = useMemo(() => objectList.every(obj => placedObjects?.includes(obj)), [placedObjects])
-    const [showTransition, setShowTransition] = React.useState(false)
+    const { isStoryActive, placedObject, currentImage, lastImage, mode, allScenesCompleted, completedScenes } = useSelector(state => state.central)
     const [showPlaceholders, setShowPlaceholders] = useState(false)
     const initTime = useRef(Date.now())
-    const autoReturnTimer = useRef(null)
     const placeholderRefs = useRef({
         sun: null,
         bridge: null,
         fire: null
     })
     const [refsReady, setRefsReady] = useState(false)
+    const [showChapterTransition, setShowChapterTransition] = useState(false)
     const aspect = 3000 / 2000;
     const baseHeight = viewport.height;
     const baseWidth = baseHeight * aspect;
     const defaultScale = [baseWidth, baseHeight, 1];
 
     console.log('[Central] Component initialized at', Date.now() - initTime.current, 'ms')
+    console.log('[Central] Completed scenes:', completedScenes, 'All completed:', allScenesCompleted)
 
-    // Check if all refs are ready
+    // Check if all visible refs are ready
     useEffect(() => {
-        if (showPlaceholders &&
-            placeholderRefs.current.sun &&
-            placeholderRefs.current.bridge &&
-            placeholderRefs.current.fire) {
-            setRefsReady(true)
+        if (showPlaceholders && !showChapterTransition) {
+            const visiblePlaceholders = ['sun', 'bridge', 'fire'].filter(
+                scene => !completedScenes.includes(scene)
+            )
+
+            const allVisibleRefsReady = visiblePlaceholders.every(
+                scene => placeholderRefs.current[scene]
+            )
+
+            if (allVisibleRefsReady && visiblePlaceholders.length > 0) {
+                setRefsReady(true)
+            }
         }
-    }, [showPlaceholders, placeholderRefs.current.sun, placeholderRefs.current.bridge, placeholderRefs.current.fire])
+    }, [showPlaceholders, showChapterTransition, completedScenes])
 
     // Effect to show placeholders after map is visible
     useEffect(() => {
-        if (!isStoryActive && !showPlaceholders) {
-            // Wait for map transition to complete (2.5s) plus a small delay
+        if (!isStoryActive && mode === 'map') {
+            // Reset placeholders when returning to map mode
+            if (showPlaceholders) {
+                setShowPlaceholders(false)
+                setRefsReady(false)
+            }
+
+            // Wait for map transition to complete plus a small delay
             const timer = setTimeout(() => {
                 console.log('[Central] Starting placeholder animations at', Date.now() - initTime.current, 'ms')
                 setShowPlaceholders(true)
-            }, 3000) // 2.5s for map transition + 0.5s delay
+            }, 1500) // Reduced delay for faster response
 
             return () => clearTimeout(timer)
+        } else if (mode === 'scene' && showPlaceholders) {
+            // Hide placeholders immediately when entering scene mode
+            setShowPlaceholders(false)
+            setRefsReady(false)
         }
-    }, [isStoryActive, showPlaceholders])
+    }, [isStoryActive, mode])
+
+    // Handle chapter progression when all scenes are completed
+    useEffect(() => {
+        if (allScenesCompleted && !showChapterTransition) {
+            console.log('[Central] All scenes completed! Starting chapter transition...')
+            setShowChapterTransition(true)
+            setShowPlaceholders(false)
+            setRefsReady(false)
+
+            // Wait a moment then trigger next chapter
+            setTimeout(() => {
+                dispatch(nextChapter())
+                setShowChapterTransition(false)
+                console.log('[Central] Chapter transition completed')
+            }, 3000) // 3 second transition
+        }
+    }, [allScenesCompleted, showChapterTransition, dispatch])
 
     // Effect to handle animations when refs are ready
     useEffect(() => {
-        if (refsReady) {
+        if (refsReady && !showChapterTransition) {
             console.log('[Central] Refs ready, starting animations at', Date.now() - initTime.current, 'ms')
 
             // Create a timeline for coordinated animations
             const tl = gsap.timeline()
 
-            // Add animations to timeline with delays
-            tl.to(placeholderRefs.current.sun.scale, {
-                x: 1,
-                y: 1,
-                z: 1,
-                duration: 0.8,
-                ease: "back.out(1.7)",
-                delay: 0.2
+            // Get visible placeholders
+            const visiblePlaceholders = ['sun', 'bridge', 'fire'].filter(
+                scene => !completedScenes.includes(scene)
+            )
+
+            // Add animations for each visible placeholder
+            visiblePlaceholders.forEach((scene, index) => {
+                const ref = placeholderRefs.current[scene]
+                if (ref) {
+                    const delay = index * 0.2
+                    tl.to(ref.scale, {
+                        x: 1,
+                        y: 1,
+                        z: 1,
+                        duration: 0.8,
+                        ease: "back.out(1.7)",
+                        delay: delay
+                    }, index === 0 ? 0.2 : "-=0.6")
+                        .to(ref.material, {
+                            opacity: 1,
+                            duration: 0.8,
+                            ease: "back.out(1.7)",
+                            delay: delay
+                        }, index === 0 ? 0.2 : "-=0.6")
+                }
             })
-                .to(placeholderRefs.current.sun.material, {
-                    opacity: 1,
-                    duration: 0.8,
-                    ease: "back.out(1.7)",
-                    delay: 0.2
-                })
-                .to(placeholderRefs.current.bridge.scale, {
-                    x: 1,
-                    y: 1,
-                    z: 1,
-                    duration: 0.8,
-                    ease: "back.out(1.7)",
-                    delay: 0.2
-                }, "-=0.6")
-                .to(placeholderRefs.current.bridge.material, {
-                    opacity: 1,
-                    duration: 0.8,
-                    ease: "back.out(1.7)",
-                    delay: 0.2
-                }, "-=0.6")
-                .to(placeholderRefs.current.fire.scale, {
-                    x: 1,
-                    y: 1,
-                    z: 1,
-                    duration: 0.8,
-                    ease: "back.out(1.7)",
-                    delay: 0.2
-                }, "-=0.6")
-                .to(placeholderRefs.current.fire.material, {
-                    opacity: 1,
-                    duration: 0.8,
-                    ease: "back.out(1.7)",
-                    delay: 0.2
-                }, "-=0.6")
 
             return () => {
                 tl.kill()
             }
         }
-    }, [refsReady])
+    }, [refsReady, showChapterTransition, completedScenes])
 
     const handleSquareClick = useCallback((objectType) => (e) => {
         console.log('[Central] Square clicked at', Date.now() - initTime.current, 'ms')
 
-        // Clear any existing auto-return timer
-        if (autoReturnTimer.current) {
-            clearTimeout(autoReturnTimer.current)
-            autoReturnTimer.current = null
-        }
-
         dispatch(placeObject(objectType))
         dispatch(setMode('scene'))
 
-        // Auto return to map after 5 seconds
-        autoReturnTimer.current = setTimeout(() => {
-            console.log('[Central] Auto returning to map after 5 seconds')
-            dispatch(resetScene())
-            dispatch(setMode('map'))
-            setShowPlaceholders(false)
-            setRefsReady(false)
-            autoReturnTimer.current = null
-        }, 5000)
-    }, [dispatch])
-
-    const handleAnimationEnd = useCallback(() => {
-        console.log('[Central] Animation ended at', Date.now() - initTime.current, 'ms')
-        // Animate placeholders out
-        if (refsReady) {
-            const tl = gsap.timeline()
-            tl.to([placeholderRefs.current.sun.scale, placeholderRefs.current.bridge.scale, placeholderRefs.current.fire.scale], {
-                x: 0,
-                y: 0,
-                z: 0,
-                duration: 1.5,
-                ease: "ease.in"
-            })
-                .to([placeholderRefs.current.sun.material, placeholderRefs.current.bridge.material, placeholderRefs.current.fire.material], {
-                    opacity: 0,
-                    duration: 1.5,
-                    ease: "ease.in",
-                    onComplete: () => {
-                        dispatch(resetScene())
-                        dispatch(setMode('map'))
-                        setShowPlaceholders(false)
-                        setRefsReady(false)
-                    }
-                }, "-=1.5")
-        }
-    }, [dispatch, refsReady])
-
-    const handleNextChapter = useCallback(() => {
-        console.log('[Central] Starting next chapter transition at', Date.now() - initTime.current, 'ms')
-        setShowTransition(true)
-        // Use requestAnimationFrame for smoother transition
-        requestAnimationFrame(() => {
-            setTimeout(() => {
-                dispatch(nextChapter())
-                setShowTransition(false)
-                console.log('[Central] Next chapter transition completed at', Date.now() - initTime.current, 'ms')
-            }, 2000)
-        })
+        // Note: No auto-return timer - the video will handle returning to map when it ends
     }, [dispatch])
 
     useEffect(() => {
@@ -182,11 +142,6 @@ export const Central = React.memo((props) => {
             console.log('[Central] Component unmounted at', Date.now() - initTime.current, 'ms')
             // Kill any ongoing animations when component unmounts
             gsap.killTweensOf(placeholderRefs.current)
-            // Clear auto-return timer
-            if (autoReturnTimer.current) {
-                clearTimeout(autoReturnTimer.current)
-                autoReturnTimer.current = null
-            }
         }
     }, [])
 
@@ -197,34 +152,45 @@ export const Central = React.memo((props) => {
                 current={currentImage}
                 last={lastImage}
                 animationType={placedObject}
-                onAnimationEnd={isStoryActive ? handleAnimationEnd : undefined}
             />
-            {!isStoryActive && showPlaceholders && (
+            {showChapterTransition && (
+                <mesh position={[0, 0, 1]}>
+                    <planeGeometry args={[4, 2]} />
+                    <meshBasicMaterial color="#000000" opacity={0.8} transparent />
+                </mesh>
+            )}
+            {!isStoryActive && showPlaceholders && !showChapterTransition && (
                 <>
-                    <Placeholder
-                        ref={el => placeholderRefs.current.sun = el}
-                        position={[-1, 0, 2]}
-                        onClick={handleSquareClick('sun')}
-                        color="#ff6b6b"
-                        scale={0}
-                        opacity={0}
-                    />
-                    <Placeholder
-                        ref={el => placeholderRefs.current.bridge = el}
-                        position={[0, -1, 2]}
-                        onClick={handleSquareClick('bridge')}
-                        color="#ff6b6b"
-                        scale={0}
-                        opacity={0}
-                    />
-                    <Placeholder
-                        ref={el => placeholderRefs.current.fire = el}
-                        position={[1, 0, 2]}
-                        onClick={handleSquareClick('fire')}
-                        color="#ff6b6b"
-                        scale={0}
-                        opacity={0}
-                    />
+                    {!completedScenes.includes('sun') && (
+                        <Placeholder
+                            ref={el => placeholderRefs.current.sun = el}
+                            position={[-1, 0, 2]}
+                            onClick={handleSquareClick('sun')}
+                            color="#ff6b6b"
+                            scale={0}
+                            opacity={0}
+                        />
+                    )}
+                    {!completedScenes.includes('bridge') && (
+                        <Placeholder
+                            ref={el => placeholderRefs.current.bridge = el}
+                            position={[0, -1, 2]}
+                            onClick={handleSquareClick('bridge')}
+                            color="#ff6b6b"
+                            scale={0}
+                            opacity={0}
+                        />
+                    )}
+                    {!completedScenes.includes('fire') && (
+                        <Placeholder
+                            ref={el => placeholderRefs.current.fire = el}
+                            position={[1, 0, 2]}
+                            onClick={handleSquareClick('fire')}
+                            color="#ff6b6b"
+                            scale={0}
+                            opacity={0}
+                        />
+                    )}
                 </>
             )}
         </group>
