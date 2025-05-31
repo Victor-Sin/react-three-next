@@ -15,6 +15,8 @@ export const BurnTransitionMaterial = shaderMaterial(
     uTextureMapB: new THREE.Texture(),
     uTextureCinematic: new THREE.Texture(), // Spash -> 
 
+    uSide: false,
+
     uTime: 0.0,
     uProgressMap: 1.,
     uProgressCinematic: 0.0,
@@ -44,6 +46,7 @@ export const BurnTransitionMaterial = shaderMaterial(
     varying vec2 vUv;
     uniform sampler2D uTextureNoise;
     uniform sampler2D uTextureSplatting;
+    uniform bool uSide;
 
     float getDiffMap(vec2 uv) {
       float diff = distance(uv, vec2(0.5, 0.5));
@@ -74,10 +77,6 @@ export const BurnTransitionMaterial = shaderMaterial(
       vec4 splatting = texture2D(uTextureSplatting, uv);
       vec2 uvMapA = uv;
 
-      if(splatting.r == 0. && splatting.g == 1. && splatting.a >0.) {
-       uvMapA.xy += sin(uTime)*0.05*colorNoise.r;
-      }
-
       vec4 colorMapA = texture2D(uTextureMapA, uvMapA);
       vec4 colorMapB = texture2D(uTextureMapB, uvMapA);
       vec4 map = mix(colorMapA, colorMapB, getDiffMap(uv));
@@ -88,11 +87,14 @@ export const BurnTransitionMaterial = shaderMaterial(
 
 
       vec4 final = mix(map, colorCinematic, getDiffCinematic(uvCinematic));
-      float strengthSplatting = splatting.b * splatting.a * strength * 50.;
-      float strengthSplattingA = step(strengthSplatting, 0.65);
-      float strengthSplattingB = step(strengthSplatting, 1.) - strengthSplattingA;
+      if(!uSide) {
+        float strengthSplatting = splatting.b * splatting.a * strength * 50.;
+        float strengthSplattingA = step(strengthSplatting, 0.65);
+        float strengthSplattingB = step(strengthSplatting, 1.) - strengthSplattingA;
 
-      final.rgb = final.rgb -  strengthSplattingB + strengthSplattingB * vec3(0.569,0.412,0.192);
+        final.rgb = final.rgb -  strengthSplattingB + strengthSplattingB * vec3(0.569,0.412,0.192);
+      }
+
 
       gl_FragColor = final;
       
@@ -200,6 +202,6 @@ export const BurnTransition = ({ tmp_name, uTextureMapA, uTextureMapB, uTextureC
   })
 
   return (
-    <burnTransitionMaterial ref={materialRef} uTextureSplatting={mapTexture} uTextureNoise={gpgpu && gpgpu.getTexture()} uTextureMapA={uTextureMapA} uTextureMapB={uTextureMapB} uTextureCinematic={uTextureCinematic} name={name} />
+    <burnTransitionMaterial ref={materialRef} uTextureSplatting={mapTexture} uSide={isSidePanel} uTextureNoise={gpgpu && gpgpu.getTexture()} uTextureMapA={uTextureMapA} uTextureMapB={uTextureMapB} uTextureCinematic={uTextureCinematic} name={name} />
   )
 }
