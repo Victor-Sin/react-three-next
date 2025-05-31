@@ -1,7 +1,7 @@
 import { shaderMaterial } from '@react-three/drei'
 import * as THREE from 'three'
 import { useState, useEffect, useRef } from 'react'
-import { extend,useFrame, useThree } from '@react-three/fiber'
+import { extend, useFrame, useThree } from '@react-three/fiber'
 import { useDispatch, useSelector } from 'react-redux'
 import { setTransition, setSideTransition } from '@/store/slices/centralSlice'
 import { gsap as GSAP } from 'gsap';
@@ -45,15 +45,22 @@ export const BurnTransitionMaterial = shaderMaterial(
     uniform sampler2D uTextureNoise;
     uniform sampler2D uTextureSplatting;
 
-    float getDiffMap(vec2 uv) { 
+    float getDiffMap(vec2 uv) {
       float diff = distance(uv, vec2(0.5, 0.5));
       diff = abs(sin(uTime)*diff);
       return uProgressMap;
     }
 
-    float getDiffCinematic(vec2 uv) { 
+    float getDiffCinematic(vec2 uv) {
       float diff = abs(sin(uTime*2.));
       return uProgressCinematic;
+    }
+
+    vec2 rotate(vec2 v, float a) {
+      float s = sin(a);
+      float c = cos(a);
+      mat2 m = mat2(c, s, -s, c);
+      return m * v;
     }
 
 
@@ -61,23 +68,31 @@ export const BurnTransitionMaterial = shaderMaterial(
       vec2 uv = vUv;
       vec2 uvCinematic = vUv;
 
-     
+
       vec4 colorCinematic = texture2D(uTextureCinematic, uvCinematic);
       vec4 colorNoise = texture2D(uTextureNoise, uv);
       vec4 splatting = texture2D(uTextureSplatting, uv);
       vec2 uvMapA = uv;
 
-      if(splatting.r == 1. && splatting.g == 0. && splatting.a >0.) {
-       uvMapA.xy += sin(uTime)*0.0025*colorNoise.r;
+      if(splatting.r == 0. && splatting.g == 1. && splatting.a >0.) {
+       uvMapA.xy += sin(uTime)*0.05*colorNoise.r;
       }
 
       vec4 colorMapA = texture2D(uTextureMapA, uvMapA);
       vec4 colorMapB = texture2D(uTextureMapB, uvMapA);
       vec4 map = mix(colorMapA, colorMapB, getDiffMap(uv));
-     
-       
+
+      vec2 tmp = vec2(vUv.x, (1.- vUv.y - .5) * pow(vUv.x,2.) * .5);
+      float strength = colorNoise.g * tmp.y ;
+
+
 
       vec4 final = mix(map, colorCinematic, getDiffCinematic(uvCinematic));
+      float strengthSplatting = splatting.b * splatting.a * strength * 50.;
+      float strengthSplattingA = step(strengthSplatting, 0.65);
+      float strengthSplattingB = step(strengthSplatting, 1.) - strengthSplattingA;
+
+      final.rgb = final.rgb -  strengthSplattingB + strengthSplattingB * vec3(0.569,0.412,0.192);
 
       gl_FragColor = final;
       
@@ -86,10 +101,10 @@ export const BurnTransitionMaterial = shaderMaterial(
   `
 )
 
-extend({ BurnTransitionMaterial }) 
+extend({ BurnTransitionMaterial })
 
 
-export const BurnTransition = ({ tmp_name, uTextureMapA, uTextureMapB, uTextureCinematic}) => {
+export const BurnTransition = ({ tmp_name, uTextureMapA, uTextureMapB, uTextureCinematic }) => {
 
   const isLaunchedRef = useRef(false)
   const { gl } = useThree()
@@ -102,11 +117,11 @@ export const BurnTransition = ({ tmp_name, uTextureMapA, uTextureMapB, uTextureC
   console.log(img, 'img')
   const mapTexture = useTexture('/img/center/map/chapter_one/textureSplatting.png')
   console.log(mapTexture, 'mapTexture')
-  const [gpgpu, setGPGPU] = useState(null)  
+  const [gpgpu, setGPGPU] = useState(null)
 
 
-  
-   
+
+
   // Determine if this is a side panel or central panel
   const isSidePanel = tmp_name !== 'central'
   const currentTransition = isSidePanel ? sideTransition : transition
@@ -118,10 +133,10 @@ export const BurnTransition = ({ tmp_name, uTextureMapA, uTextureMapB, uTextureC
 
 
     if (isLaunchedRef.current) {
-      console.log(`[${tmp_name}] BurnTransition effect triggered`, { 
-        currentTransition, 
-        mode, 
-        uTextureCinematic: !!uTextureCinematic 
+      console.log(`[${tmp_name}] BurnTransition effect triggered`, {
+        currentTransition,
+        mode,
+        uTextureCinematic: !!uTextureCinematic
       })
 
       if (!currentTransition.isTransitioning) {
@@ -135,14 +150,14 @@ export const BurnTransition = ({ tmp_name, uTextureMapA, uTextureMapB, uTextureC
   }, [currentTransition.shouldTransition, mode, tmp_name])
 
   function transitionAnimationIn(isMap = true) {
-    dispatch(setTransitionAction({isTransitioning: true, ...currentTransition}))
+    dispatch(setTransitionAction({ isTransitioning: true, ...currentTransition }))
     if (isMap) {
       GSAP.to(materialRef.current, {
         uProgressMap: 1,
         duration: 1,
         ease: 'ease.inOut',
         onComplete: () => {
-          dispatch(setTransitionAction({isTransitioning: false, shouldTransition: false, ...currentTransition}))
+          dispatch(setTransitionAction({ isTransitioning: false, shouldTransition: false, ...currentTransition }))
         }
       })
     } else {
@@ -151,21 +166,21 @@ export const BurnTransition = ({ tmp_name, uTextureMapA, uTextureMapB, uTextureC
         duration: 1,
         ease: 'ease.inOut',
         onComplete: () => {
-          dispatch(setTransitionAction({isTransitioning: false, shouldTransition: false, ...currentTransition}))
+          dispatch(setTransitionAction({ isTransitioning: false, shouldTransition: false, ...currentTransition }))
         }
       })
     }
   }
 
   function transitionAnimationOut(isMap = true) {
-    dispatch(setTransitionAction({isTransitioning: true, ...currentTransition}))
+    dispatch(setTransitionAction({ isTransitioning: true, ...currentTransition }))
     if (isMap) {
       GSAP.to(materialRef.current, {
         uProgressMap: 0,
         duration: 1,
         ease: 'ease.inOut',
         onComplete: () => {
-          dispatch(setTransitionAction({isTransitioning: false, ...currentTransition}))
+          dispatch(setTransitionAction({ isTransitioning: false, ...currentTransition }))
         }
       })
     } else {
@@ -174,7 +189,7 @@ export const BurnTransition = ({ tmp_name, uTextureMapA, uTextureMapB, uTextureC
         duration: 1,
         ease: 'ease.inOut',
         onComplete: () => {
-          dispatch(setTransitionAction({isTransitioning: false, shouldTransition: false, ...currentTransition}))
+          dispatch(setTransitionAction({ isTransitioning: false, shouldTransition: false, ...currentTransition }))
         }
       })
     }
@@ -185,6 +200,6 @@ export const BurnTransition = ({ tmp_name, uTextureMapA, uTextureMapB, uTextureC
   })
 
   return (
-      <burnTransitionMaterial ref={materialRef} uTextureSplatting={mapTexture} uTextureNoise={gpgpu && gpgpu.getTexture() } uTextureMapA={uTextureMapA} uTextureMapB={uTextureMapB} uTextureCinematic={uTextureCinematic} name={name} />
+    <burnTransitionMaterial ref={materialRef} uTextureSplatting={mapTexture} uTextureNoise={gpgpu && gpgpu.getTexture()} uTextureMapA={uTextureMapA} uTextureMapB={uTextureMapB} uTextureCinematic={uTextureCinematic} name={name} />
   )
 }

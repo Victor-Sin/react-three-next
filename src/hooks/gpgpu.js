@@ -1,4 +1,4 @@
-import {GPUComputationRenderer} from "three/examples/jsm/misc/GPUComputationRenderer";
+import { GPUComputationRenderer } from "three/examples/jsm/misc/GPUComputationRenderer";
 import * as THREE from "three";
 import frag from "./frag.glsl"
 
@@ -16,14 +16,14 @@ export default class GPGPU {
         }
 
         GPGPU.instance = this;
-        
+
         if (!renderer) {
             console.error('GPGPU: Renderer is required');
             return;
         }
 
         this.renderer = renderer;
-        
+
         // Initialize asynchronously to ensure renderer is ready
         this.init();
     }
@@ -32,13 +32,13 @@ export default class GPGPU {
         try {
             // Wait for next frame to ensure renderer is fully initialized
             await new Promise(resolve => requestAnimationFrame(resolve));
-            
+
             this.createGPGPURenderer();
             this.createDataTextures();
             this.createVariable();
             this.setRendererDependencies();
             this.initiateRenderer();
-            
+
             this.isInitialized = true;
             console.log('GPGPU initialized successfully');
         } catch (error) {
@@ -50,7 +50,7 @@ export default class GPGPU {
         if (!this.renderer) {
             throw new Error('Renderer not available');
         }
-        
+
         this.gpgpuRenderer = new GPUComputationRenderer(
             512, // Reduced size for better performance
             512,
@@ -70,7 +70,7 @@ export default class GPGPU {
         if (!this.gpgpuRenderer || !this.texture) {
             throw new Error('GPGPU Renderer or texture not initialized');
         }
-        
+
         this.variableNoise = this.gpgpuRenderer.addVariable('noiseTexture', frag, this.texture);
         this.variableNoise.material.uniforms.uTime = new THREE.Uniform(0);
     }
@@ -86,12 +86,12 @@ export default class GPGPU {
         if (!this.gpgpuRenderer) {
             throw new Error('GPGPU Renderer not initialized');
         }
-        
+
         // Check if renderer has required capabilities
         if (!this.renderer.capabilities) {
             throw new Error('Renderer capabilities not available');
         }
-        
+
         const error = this.gpgpuRenderer.init();
         if (error !== null) {
             throw new Error('GPGPU initialization error: ' + error);

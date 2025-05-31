@@ -75,8 +75,24 @@ void main() {
     vec2 uv = gl_FragCoord.xy / resolution.xy;
     
     // Create animated noise
-    float noiseValue = cnoise(vec3(uv*3., uTime * 0.5));
+    float noiseValue = cnoise(vec3(uv*20.-uTime * 1., uTime * .25));
+    
+    vec2 uvRiver = vec2(uv.x * 1.5,uv.y  );
+    vec2 tmp = vec2(uvRiver.x, (1.- uvRiver.y) * pow(uvRiver.x + 0.8,2.) );
+    
+    // Application de la rotation
+    float angle = tmp.y;
+    mat2 rotation = mat2(
+        cos(angle), -sin(angle),
+        sin(angle), cos(angle)
+    );
+
+    vec2 newUvRiver = vec2(uv.x + 5.,uv.y*0.01);
+    vec2 rotatedUV = rotation * newUvRiver;
+    
+    float noiseRiver = cnoise(vec3(rotatedUV*5.5 + uTime * 5.5 +  noiseValue * 20.5 , uTime * 1.5));
+    noiseRiver = clamp(noiseRiver + noiseValue * 5.5, 0.,2.);
     
     // Output the noise as a texture
-    gl_FragColor = vec4(noiseValue, noiseValue, noiseValue, 1.0);
+    gl_FragColor = vec4(noiseValue, noiseRiver, noiseValue, 1.0);
 }
