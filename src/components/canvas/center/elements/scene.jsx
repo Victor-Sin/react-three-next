@@ -27,7 +27,7 @@ const cinematicVideos = {
     fire: '/img/scenes/fire.mp4'
 }
 
-export const Scene = ({ scale = [1, 1, 1] }) => {
+export const Scene = ({ scale = [1, 1, 1], children }) => {
     const mesh = useRef(null)
     const videoRef = useRef(null)
     const { textures, isLoaded } = useTextures()
@@ -119,14 +119,15 @@ export const Scene = ({ scale = [1, 1, 1] }) => {
     const { textureA, textureB, fallbackTexture } = getTextures()
 
     return (
-        <mesh ref={mesh} scale={scale}>
-            <planeGeometry args={[1, 1]} />
+        <mesh ref={mesh} position={[0, 0, 0]}>
+            <planeGeometry args={[scale[0], scale[1]]} />
             <BurnTransition
                 tmp_name="central"
                 uTextureMapA={textureA}
                 uTextureMapB={textureB}
                 uTextureCinematic={cinematicTexture || fallbackTexture}
             />
+            {children}
         </mesh>
     )
 }

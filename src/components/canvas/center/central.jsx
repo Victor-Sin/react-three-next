@@ -5,9 +5,11 @@ import { useDispatch, useSelector } from 'react-redux'
 import { placeObject, setMode, nextChapter } from '@/store/slices/centralSlice'
 import React, { useCallback, useEffect, useState, useRef } from 'react'
 import { Scene } from './elements/scene'
+import { Posable } from './elements/posable'
 import { Placeholder } from './elements/Placeholder'
 import { gsap } from 'gsap'
 import GPGPU from '@/hooks/gpgpu'
+
 
 export const Central = React.memo((props) => {
     const { viewport, gl } = useThree()
@@ -174,7 +176,7 @@ export const Central = React.memo((props) => {
     useFrame((state, delta) => {
         if (gpgpu && gpgpu.isInitialized) {
             gpgpu.render(delta)
-            
+
         }
     });
 
@@ -185,7 +187,12 @@ export const Central = React.memo((props) => {
                 current={currentImage}
                 last={lastImage}
                 animationType={placedObject}
-            />
+            >
+
+                <Posable
+                    scale={defaultScale}
+                />
+            </Scene>
             {showChapterTransition && (
                 <mesh position={[0, 0, 1]}>
                     <planeGeometry args={[4, 2]} />
