@@ -3,24 +3,44 @@ import { useRef, useEffect, useState } from 'react'
 
 const basePosablesFreq = {
   5: {
-    name: "moon",
-    captors: [],
-    map: 1
+    name: "thunder",
+    map: {
+      splash: [],
+      zoom: [[8,12],[8,11],[9,11],[9,12]],
+      global: [],
+    },
+    isIn: false
   },
   7.5: {
-    name: "sun",
-    captors: [],
-    map: 2
+    name: "boat",
+    map: {
+      splash: [],
+      zoom:  [[8,2],[7,2],[8,3]],
+      global: [[13,2],[12,2]],
+    },
+    isIn: false
   },
   3.5: {
-    name: "bridge",
-    captors: [],
-    map: 1
+    name: "sun",
+    map: {
+      splash: [[9,1],[9,2]],
+      zoom: [[19,10],[20,10]],
+      global: [[17,12],[17,11],[18,12],[18,11]],
+    },
+    isIn: false
   },
+  4.5: {
+    name: "fire",
+    map: {
+      splash: [],
+      zoom: [],
+      global: [[6,4],[7,4]],
+    },
+    isIn: false
+  }
 }
 
 export const Posable = ({ scale = [1, 1, 1] }) => {
-    const mesh = useRef(null)
     const col = 20;
     const line = 12;
 
@@ -45,7 +65,7 @@ export const Posable = ({ scale = [1, 1, 1] }) => {
           lineTmp++;
         }
         return (
-          <mesh key={`${(colTmp+1)*(lineTmp+1)}_cell`} ref={mesh} position={pos}>
+          <mesh key={`${(colTmp+1)*(lineTmp+1)}_cell`} position={pos}>
             < planeGeometry args={[0.05,0.05]} />
             <meshBasicMaterial color="red" opacity={0.5} transparent />
           </mesh>
@@ -55,11 +75,11 @@ export const Posable = ({ scale = [1, 1, 1] }) => {
 
 
     return (
-        <group>
-            <mesh ref={mesh} position={position}>
-                < planeGeometry args={scaleNew} />
-                <meshBasicMaterial color="blue" opacity={0.5} transparent />
-            </mesh>
+        <group visible={false}>
+          <mesh position={position}>
+              < planeGeometry args={scaleNew} />
+              <meshBasicMaterial color="blue" opacity={0.5} transparent />
+          </mesh>
           {displayGrid()}
         </group >
 
