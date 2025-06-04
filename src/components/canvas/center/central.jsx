@@ -20,7 +20,8 @@ export const Central = React.memo((props) => {
     const placeholderRefs = useRef({
         sun: null,
         bridge: null,
-        fire: null
+        fire: null,
+        star: null
     })
     const [refsReady, setRefsReady] = useState(false)
     const [showChapterTransition, setShowChapterTransition] = useState(false)
@@ -97,33 +98,9 @@ export const Central = React.memo((props) => {
     // Handle chapter progression when all scenes are completed
     useEffect(() => {
         if (allScenesCompleted && !showChapterTransition) {
-            console.log('[Central] All scenes completed! Showing final placeholder...')
-            setShowPlaceholders(true) // Keep placeholders visible for the final one
+            console.log('[Central] All scenes completed! Showing final star placeholder...')
+            setShowPlaceholders(true)
             setRefsReady(true)
-
-            // Add a delay before showing the chapter transition
-            const handleFinalPlaceholderClick = () => {
-                setShowChapterTransition(true)
-                setShowPlaceholders(false)
-                setRefsReady(false)
-
-                // Wait a moment then trigger next chapter
-                setTimeout(() => {
-                    dispatch(nextChapter())
-                    setShowChapterTransition(false)
-                    console.log('[Central] Chapter transition completed')
-                }, 3000) // 3 second transition
-            }
-
-            // Add the final placeholder to the scene
-            if (placeholderRefs.current) {
-                const finalPlaceholder = {
-                    position: [0, 0, 0], // Center position
-                    onClick: handleFinalPlaceholderClick,
-                    type: 'chapter_transition'
-                }
-                setPlaceholders(prev => [...prev, finalPlaceholder])
-            }
         }
     }, [allScenesCompleted, showChapterTransition, dispatch])
 
@@ -132,15 +109,13 @@ export const Central = React.memo((props) => {
         if (refsReady && !showChapterTransition) {
             console.log('[Central] Refs ready, starting animations at', Date.now() - initTime.current, 'ms')
 
-            // Create a timeline for coordinated animations
             const tl = gsap.timeline()
 
-            // Get visible placeholders
-            const visiblePlaceholders = ['sun', 'bridge', 'fire'].filter(
-                scene => !completedScenes.includes(scene)
-            )
+            // Get visible placeholders including star if all scenes completed
+            const visiblePlaceholders = allScenesCompleted
+                ? ['star']
+                : ['sun', 'bridge', 'fire'].filter(scene => !completedScenes.includes(scene))
 
-            // Add animations for each visible placeholder
             visiblePlaceholders.forEach((scene, index) => {
                 const ref = placeholderRefs.current[scene]
                 if (ref) {
@@ -166,7 +141,7 @@ export const Central = React.memo((props) => {
                 tl.kill()
             }
         }
-    }, [refsReady, showChapterTransition, completedScenes])
+    }, [refsReady, showChapterTransition, completedScenes, allScenesCompleted])
 
     const handleSquareClick = useCallback((objectType) => (e) => {
 
@@ -174,6 +149,15 @@ export const Central = React.memo((props) => {
         dispatch(setMode('scene'))
 
         // Note: No auto-return timer - the video will handle returning to map when it ends
+    }, [dispatch])
+
+    const handleStarClick = useCallback(() => {
+        // Use the same pattern as other placeholders
+        dispatch(placeObject('star')) // Add 'star' as a new type of placeable object
+        dispatch(setMode('scene'))
+
+        // The video texture will handle the transition and chapter progression
+        // through its own completion callback, just like other scenes
     }, [dispatch])
 
     useEffect(() => {
@@ -198,10 +182,10 @@ export const Central = React.memo((props) => {
                 last={lastImage}
                 animationType={placedObject}
             >
-                {/* 
+
                 <Posable
                     scale={defaultScale}
-                /> */}
+                />
             </Scene>
             {showChapterTransition && (
                 <mesh position={[0, 0, 1]}>
@@ -237,6 +221,16 @@ export const Central = React.memo((props) => {
                             position={[1, 0, 2]}
                             onClick={handleSquareClick('fire')}
                             color="#ff6b6b"
+                            scale={0}
+                            opacity={0}
+                        />
+                    )}
+                    {allScenesCompleted && (
+                        <Placeholder
+                            ref={el => placeholderRefs.current.star = el}
+                            position={[0, 0, 2]}
+                            onClick={handleSquareClick('star')} // Use the same handler pattern
+                            color="#ffd700"
                             scale={0}
                             opacity={0}
                         />

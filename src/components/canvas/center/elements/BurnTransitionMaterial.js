@@ -9,6 +9,8 @@ import { useTexture } from '@react-three/drei'
 import GPGPU from '@/hooks/gpgpu'
 import img from '../../../../../public/img/center/map/chapter_one/map_lefta.png'
 
+
+
 /**
  * Matériau shader personnalisé pour créer des effets de transition de type "brûlure"
  * entre différentes textures (cartes et cinématiques)
@@ -132,6 +134,96 @@ export const BurnTransitionMaterial = shaderMaterial(
 extend({ BurnTransitionMaterial })
 
 /**
+ * Animation de transition d'entrée
+ */
+const handleTransitionAnimationIn = ({ materialRef, dispatch, currentTransition, setTransitionAction, isMap = true }) => {
+  // Prevent triggering if already transitioning or completed
+  if (currentTransition.isTransitioning || currentTransition.completed) return;
+  
+  dispatch(setTransitionAction({ 
+    isTransitioning: true, 
+    shouldTransition: false,
+    completed: false,
+    ...currentTransition 
+  }))
+  
+  if (isMap) {
+    GSAP.to(materialRef.current, {
+      uProgressMap: 1,
+      duration: 1,
+      ease: 'ease.inOut',
+      onComplete: () => {
+        dispatch(setTransitionAction({ 
+          isTransitioning: false, 
+          shouldTransition: false,
+          completed: true,
+          ...currentTransition 
+        }))
+      }
+    })
+  } else {
+    GSAP.to(materialRef.current, {
+      uProgressCinematic: 1,
+      duration: 1,
+      ease: 'ease.inOut',
+      onComplete: () => {
+        dispatch(setTransitionAction({ 
+          isTransitioning: false, 
+          shouldTransition: false,
+          completed: true,
+          ...currentTransition 
+        }))
+      }
+    })
+  }
+}
+
+/**
+ * Animation de transition de sortie
+ */
+const handleTransitionAnimationOut = ({ materialRef, dispatch, currentTransition, setTransitionAction, isMap = true }) => {
+  // Prevent triggering if already transitioning
+  if (currentTransition.isTransitioning) return;
+  
+  dispatch(setTransitionAction({ 
+    isTransitioning: true, 
+    shouldTransition: true,
+    completed: false,
+    ...currentTransition 
+  }))
+  
+  if (isMap) {
+    GSAP.to(materialRef.current, {
+      uProgressMap: 0,
+      duration: 1,
+      ease: 'ease.inOut',
+      onComplete: () => {
+        dispatch(setTransitionAction({ 
+          isTransitioning: false, 
+          shouldTransition: false,
+          completed: true,
+          ...currentTransition 
+        }))
+      }
+    })
+  } else {
+    GSAP.to(materialRef.current, {
+      uProgressCinematic: 0,
+      duration: 1,
+      ease: 'ease.inOut',
+      onComplete: () => {
+        dispatch(setTransitionAction({ 
+          isTransitioning: false, 
+          shouldTransition: false,
+          completed: true,
+          ...currentTransition 
+        }))
+      }
+    })
+  }
+}
+
+/**
  * Composant React qui gère les transitions de brûlure entre textures
  * @param {string} tmp_name - Nom du composant (utilisé pour identifier les panneaux)
  * @param {THREE.Texture} uTextureMapA - Première texture de carte
@@ -166,96 +258,50 @@ export const BurnTransition = ({ tmp_name, uTextureMapA, uTextureMapB, uTextureC
   const setTransitionAction = isSidePanel ? setSideTransition : setTransition
 
   // === EFFET PRINCIPAL ===
-  // Gère l'initialisation et les déclenchements de transition
   useEffect(() => {
-    // Initialise le système GPGPU pour les calculs GPU
     const gpgpu = new GPGPU(gl)
     setGPGPU(gpgpu)
 
-    // Évite l'exécution lors du premier rendu
     if (isLaunchedRef.current) {
-      console.log(`[${tmp_name}] BurnTransition effect triggered`, {
-        currentTransition,
-        mode,
-        uTextureCinematic: !!uTextureCinematic
-      })
-
-      // Lance l'animation d'entrée si pas en cours de transition
+      // Only trigger animations if not already transitioning
       if (!currentTransition.isTransitioning) {
-        transitionAnimationIn(mode === 'map')
-      }
-      
-      // Lance l'animation de sortie si demandée
-      if (currentTransition.shouldTransition) {
-        transitionAnimationOut(mode === 'map')
+        if (currentTransition.shouldTransition && !currentTransition.completed) {
+          handleTransitionAnimationOut({
+            materialRef,
+            dispatch,
+            currentTransition,
+            setTransitionAction,
+            isMap: mode === 'map'
+          })
+        } else if (!currentTransition.completed) {
+          handleTransitionAnimationIn({
+            materialRef,
+            dispatch,
+            currentTransition,
+            setTransitionAction,
+            isMap: mode === 'map'
+          })
+        }
       }
     }
     isLaunchedRef.current = true
-  }, [currentTransition.shouldTransition, mode, tmp_name])
 
-  /**
-   * Animation de transition d'entrée
-   * @param {boolean} isMap - True pour mode carte, false pour mode cinématique
-   */
-  function transitionAnimationIn(isMap = true) {
-    // Marque la transition comme en cours
-    dispatch(setTransitionAction({ isTransitioning: true, ...currentTransition }))
-    
-    if (isMap) {
-      // Animation pour le mode carte
-      GSAP.to(materialRef.current, {
-        uProgressMap: 1,        // Progression vers 1 (transition complète)
-        duration: 1,           // Durée de 1 seconde
-        ease: 'ease.inOut',    // Courbe d'animation douce
-        onComplete: () => {
-          // Termine la transition et reset les flags
-          dispatch(setTransitionAction({ isTransitioning: false, shouldTransition: false, ...currentTransition }))
-        }
-      })
-    } else {
-      // Animation pour le mode cinématique
-      GSAP.to(materialRef.current, {
-        uProgressCinematic: 1,
-        duration: 1,
-        ease: 'ease.inOut',
-        onComplete: () => {
-          dispatch(setTransitionAction({ isTransitioning: false, shouldTransition: false, ...currentTransition }))
-        }
-      })
+    // Cleanup function
+    return () => {
+      if (gpgpu) {
+        gpgpu.dispose()
+      }
     }
-  }
-
-  /**
-   * Animation de transition de sortie
-   * @param {boolean} isMap - True pour mode carte, false pour mode cinématique
-   */
-  function transitionAnimationOut(isMap = true) {
-    // Marque la transition comme en cours
-    dispatch(setTransitionAction({ isTransitioning: true, ...currentTransition }))
-    
-    if (isMap) {
-      // Animation inverse pour le mode carte
-      GSAP.to(materialRef.current, {
-        uProgressMap: 0,       // Progression vers 0 (transition inverse)
-        duration: 1,
-        ease: 'ease.inOut',
-        onComplete: () => {
-          // Termine la transition mais garde shouldTransition à false
-          dispatch(setTransitionAction({ isTransitioning: false, ...currentTransition }))
-        }
-      })
-    } else {
-      // Animation inverse pour le mode cinématique
-      GSAP.to(materialRef.current, {
-        uProgressCinematic: 0,
-        duration: 1,
-        ease: 'ease.inOut',
-        onComplete: () => {
-          dispatch(setTransitionAction({ isTransitioning: false, shouldTransition: false, ...currentTransition }))
-        }
-      })
-    }
-  }
+  }, [
+    currentTransition.shouldTransition,
+    currentTransition.completed,
+    gl,
+    mode,
+    tmp_name,
+    dispatch,
+    setTransitionAction,
+    uTextureCinematic
+  ])
 
   // === BOUCLE DE RENDU ===
   // Met à jour le temps à chaque frame pour les animations shader

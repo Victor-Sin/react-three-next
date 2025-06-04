@@ -26,6 +26,7 @@ const cinematicVideos = {
     sun: '/img/scenes/sun.mp4',
     bridge: '/img/scenes/bridge.mp4',
     fire: '/img/scenes/fire.mp4',
+    star: '/img/scenes/fire.mp4',
     chapter_transition: '/img/scenes/fire.mp4'
 }
 
@@ -67,8 +68,7 @@ export const Scene = ({ scale = [1, 1, 1], children }) => {
 
     // Initialize cinematic video when an object is placed
     useEffect(() => {
-        if ((mode === 'scene' && placedObject && cinematicVideos[placedObject]) ||
-            (placedObject === 'chapter_transition' && cinematicVideos[placedObject])) {
+        if (mode === 'scene' && placedObject && cinematicVideos[placedObject] && !cinematicTexture) {
             console.log(`[Scene] Loading cinematic video for ${placedObject}`)
 
             const video = document.createElement('video')
