@@ -1,118 +1,131 @@
-const WebSocket = require('ws');
-const http = require('http');
 const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
 const path = require('path');
 
-// Keep track of connected clients
-const clients = new Set();
+// Configuration
+const PORT = process.env.PORT || 8080;
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
+// State tracking
+const connectedClients = new Map(); // Using Map to store client info
 let messageCount = 0;
 let lastLogTime = Date.now();
 
-// Create express app
-const app = express();
-const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
-
-// Enable CORS for all routes
+// Middleware
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
   next();
 });
 
-// Serve static files from the public directory
+// Static files
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Default route for the receiver
-app.get('/', (req, res) => {
-  res.redirect('/receiver/');
-});
-
-// Diagnostic route
+// Routes
+app.get('/', (req, res) => res.redirect('/receiver/'));
 app.get('/status', (req, res) => {
   res.json({
     status: 'running',
-    connections: clients.size,
+    connections: connectedClients.size,
     uptime: process.uptime()
   });
 });
 
-// Handle WebSocket connections
-wss.on('connection', (ws, req) => {
-  const clientIp = req.socket.remoteAddress;
+// Socket.IO Connection Handler
+io.on('connection', (socket) => {
+  const clientIp = socket.handshake.address;
   console.log(`Client connected from ${clientIp}`);
-  clients.add(ws);
 
-  // Send connection confirmation
-  ws.send(JSON.stringify({
-    type: 'info',
-    message: 'Connected to WebSocket server',
-    clients: clients.size
-  }));
+  // Store client with additional metadata
+  connectedClients.set(socket.id, {
+    socket,
+    ip: clientIp,
+    connectedAt: new Date()
+  });
 
-  // Handle messages from clients
-  ws.on('message', (message) => {
-    messageCount++;
-    
-    // Log stats every 5 seconds
-    const now = Date.now();
-    if (now - lastLogTime > 5000) {
-      console.log(`Stats: ${messageCount} messages in the last 5 seconds, ${clients.size} clients connected`);
-      messageCount = 0;
-      lastLogTime = now;
-    }
-    
+
+  // Écoute des événements 'sensor-data' (remplace 'message' dans votre version originale)
+  socket.on('sensor-data', (data) => {
     try {
-      const messageString = message.toString();
-      const data = JSON.parse(messageString);
-      
-      // Log panel info messages
-      if (data.type === 'panelInfo') {
-        console.log(`Panel info for ${data.panelId}: ${data.width}x${data.height} (${data.aspectRatio})`);
-      }
-      
-      // For frames, log minimal info to avoid console spam
-      if (data.type === 'frame') {
-        // Check if data is valid and log basic info
-        const hasValidImage = data.data && data.data.startsWith('data:image');
-        console.log(`Frame from ${data.panelId}: ${hasValidImage ? 'valid' : 'INVALID'} image, ${data.data ? (data.data.length / 1024).toFixed(1) : 0}KB`);
-        
-        if (!hasValidImage) {
-          console.error('Invalid image data detected');
-        }
-      }
-      // Don't log every frame message to avoid console spam
-      else if (data.type !== 'frame') {
-        console.log(`Message: ${data.type} from panel ${data.panelId || 'unknown'}`);
-      }
-      
-      // Broadcast to all other clients
-      clients.forEach((client) => {
-        if (client !== ws && client.readyState === WebSocket.OPEN) {
-          try {
-            client.send(messageString);
-          } catch (error) {
-            console.error('Error sending to client:', error);
-          }
-        }
-      });
+      console.log('Données reçues:', data);
+
+      // Diffusion à tous les autres clients (méthode Socket.IO)
+      socket.broadcast.emit('sensor-data', data);
+
+      // Ou pour émettre à tout le monde (y compris l'émetteur) :
+      // io.emit('sensor-data', data);
     } catch (error) {
-      console.error('Error processing message:', error);
-      console.error('Message start:', message.toString().substring(0, 100));
+      console.error('Erreur de traitement:', error);
     }
   });
 
-  // Handle disconnections
-  ws.on('close', () => {
+  // Send connection confirmation
+  socket.emit('info', {
+    message: 'Connected to Socket.IO server',
+    clients: connectedClients.size
+  });
+
+  // Message handler
+  socket.on('message', (data) => {
+    messageCount++;
+    logStats();
+
+    try {
+      // Handle different message types
+      switch(data.type) {
+        case 'panelInfo':
+          console.log(`Panel info for ${data.panelId}: ${data.width}x${data.height} (${data.aspectRatio})`);
+          break;
+
+        case 'frame':
+          const hasValidImage = data.data && data.data.startsWith('data:image');
+          console.log(`Frame from ${data.panelId}: ${hasValidImage ? 'valid' : 'INVALID'} image, ${data.data ? (data.data.length / 1024).toFixed(1) : 0}KB`);
+          if (!hasValidImage) console.error('Invalid image data detected');
+          break;
+
+        default:
+          if (data.type !== 'frame') {
+            console.log(`Message: ${data.type} from panel ${data.panelId || 'unknown'}`);
+          }
+      }
+
+      // Broadcast to all other clients
+      socket.broadcast.emit('message', data);
+
+    } catch (error) {
+      console.error('Error processing message:', error);
+      if (data) console.error('Message start:', JSON.stringify(data).substring(0, 100));
+    }
+  });
+
+  // Disconnection handler
+  socket.on('disconnect', () => {
     console.log(`Client disconnected from ${clientIp}`);
-    clients.delete(ws);
+    connectedClients.delete(socket.id);
   });
 });
 
-// Start the server
-const PORT = process.env.PORT || 8080;
+// Helper function for periodic stats logging
+function logStats() {
+  const now = Date.now();
+  if (now - lastLogTime > 5000) {
+    console.log(`Stats: ${messageCount} messages in the last 5 seconds, ${connectedClients.size} clients connected`);
+    messageCount = 0;
+    lastLogTime = now;
+  }
+}
+
+// Start server
 server.listen(PORT, () => {
-  console.log(`WebSocket server running on port ${PORT}`);
+  console.log(`Socket.IO server running on port ${PORT}`);
   console.log(`Receiver page available at http://localhost:${PORT}/receiver/`);
   console.log(`Individual panels available at:`);
   console.log(`  - Left Panel: http://localhost:${PORT}/receiver/left-panel.html`);

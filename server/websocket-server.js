@@ -1,44 +1,48 @@
-const WebSocket = require('ws');
-const http = require('http');
 const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const io = socketIo(server, {
+  cors: {
+    origin: "*", // Autoriser toutes les origines (à restreindre en production)
+    methods: ["GET", "POST"]
+  }
+});
 
-// Keep track of connected clients
-const clients = new Set();
+// Stockage des clients connectés (facultatif, car Socket.IO gère déjà les connexions)
+const connectedClients = new Set();
 
-// Handle WebSocket connections
-wss.on('connection', (ws) => {
-  // console.log('Client connected');
-  clients.add(ws);
+// Gestion des connexions Socket.IO
+io.on('connection', (socket) => {
+  console.log('Nouveau client connecté:', socket.id);
+  connectedClients.add(socket.id);
 
-  // Handle messages from clients
-  ws.on('message', (message) => {
+  // Écoute des événements 'sensor-data' (remplace 'message' dans votre version originale)
+  socket.on('sensor-data', (data) => {
     try {
-      const data = JSON.parse(message);
-      
-      // Broadcast to all other clients
-      clients.forEach((client) => {
-        if (client !== ws && client.readyState === WebSocket.OPEN) {
-          client.send(message);
-        }
-      });
+      console.log('Données reçues:', data);
+
+      // Diffusion à tous les autres clients (méthode Socket.IO)
+      socket.broadcast.emit('sensor-data', data);
+
+      // Ou pour émettre à tout le monde (y compris l'émetteur) :
+      // io.emit('sensor-data', data);
     } catch (error) {
-      // console.error('Error processing message:', error);
+      console.error('Erreur de traitement:', error);
     }
   });
 
-  // Handle disconnections
-  ws.on('close', () => {
-    console.log('Client disconnected');
-    clients.delete(ws);
+  // Gestion de la déconnexion
+  socket.on('disconnect', () => {
+    console.log('Client déconnecté:', socket.id);
+    connectedClients.delete(socket.id);
   });
 });
 
-// Start the server
+// Démarrer le serveur
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
-  // console.log(`WebSocket server running on port ${PORT}`);
-}); 
+  console.log(`Serveur Socket.IO en écoute sur le port ${PORT}`);
+});
