@@ -1,16 +1,17 @@
 import * as THREE from 'three'
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useMemo } from 'react'
 import { useTextures } from '@/contexts/Texturecontext'
 import { useSelector, useDispatch } from 'react-redux'
 import { BurnTransition } from './BurnTransitionMaterial'
-import { resetScene, setMode, completeScene } from '@/store/slices/centralSlice'
+import { resetScene, setMode, completeScene, setTransition } from '@/store/slices/centralSlice'
 import { VideoTexture } from 'three'
 
 // Map textures for the triptych
 const mapTextures = {
     left: '/img/center/map/chapter_one/map_lefta.png',
     center: '/img/center/map/chapter_one/map_centera.png',
-    right: '/img/center/map/chapter_one/map_righta.png'
+    right: '/img/center/map/chapter_one/map_righta.png',
+    splash: '/img/splash/center.png'
 }
 
 // Other scene textures
@@ -24,7 +25,8 @@ const sceneTextures = [
 const cinematicVideos = {
     sun: '/img/scenes/sun.mp4',
     bridge: '/img/scenes/bridge.mp4',
-    fire: '/img/scenes/fire.mp4'
+    fire: '/img/scenes/fire.mp4',
+    chapter_transition: '/img/scenes/fire.mp4'
 }
 
 export const Scene = ({ scale = [1, 1, 1], children }) => {
@@ -36,9 +38,37 @@ export const Scene = ({ scale = [1, 1, 1], children }) => {
     const dispatch = useDispatch()
     const [cinematicTexture, setCinematicTexture] = useState(null)
 
+    // Handle click in splashscreen mode
+    const handleSplashClick = () => {
+        if (mode === 'splashscreen') {
+            // First start the transition
+            dispatch(setTransition({
+                isTransitioning: true,
+                shouldTransition: true,
+                name: "central",
+                type: 'burn'
+            }))
+
+            // Then change mode after a short delay to allow transition to start
+            setTimeout(() => {
+                dispatch(setMode('map'))
+                // Reset transition state after mode change
+                setTimeout(() => {
+                    dispatch(setTransition({
+                        isTransitioning: false,
+                        shouldTransition: false,
+                        name: "central",
+                        type: 'burn'
+                    }))
+                }, 1000) // After transition completes
+            }, 100)
+        }
+    }
+
     // Initialize cinematic video when an object is placed
     useEffect(() => {
-        if (mode === 'scene' && placedObject && cinematicVideos[placedObject] && !cinematicTexture) {
+        if ((mode === 'scene' && placedObject && cinematicVideos[placedObject]) ||
+            (placedObject === 'chapter_transition' && cinematicVideos[placedObject])) {
             console.log(`[Scene] Loading cinematic video for ${placedObject}`)
 
             const video = document.createElement('video')
@@ -95,39 +125,60 @@ export const Scene = ({ scale = [1, 1, 1], children }) => {
         }
     }, [mode])
 
-    if (!isLoaded) return null
-
     // Select textures based on current mode
-    const getTextures = () => {
-        if (mode === 'map') {
-            // In map mode, show the central map texture
+    const { textureA, textureB, fallbackTexture } = useMemo(() => {
+        console.log(mode, "MODE")
+        if (mode === 'splashscreen') {
+            return {
+                textureA: textures[mapTextures.splash],
+                textureB: textures[mapTextures.splash],
+                fallbackTexture: textures[mapTextures.splash]
+            }
+        } else if (mode === 'map') {
             return {
                 textureA: textures[mapTextures.center],
                 textureB: textures[mapTextures.center],
                 fallbackTexture: textures[mapTextures.center]
             }
         } else {
-            // In scene mode, use scene textures for transitions
             return {
                 textureA: textures[sceneTextures[currentTextureIndex]] || textures[sceneTextures[0]],
-                textureB: textures[sceneTextures[currentTextureIndex + 1]] || textures[sceneTextures[0]],
-                fallbackTexture: textures[sceneTextures[0]]
+                textureB: textures[mapTextures.splash],
+                fallbackTexture: textures[mapTextures.splash]
             }
         }
-    }
+    }, [mode, textures, currentTextureIndex, mapTextures, sceneTextures])
 
-    const { textureA, textureB, fallbackTexture } = getTextures()
+    if (!isLoaded) return null
 
     return (
-        <mesh ref={mesh} position={[0, 0, 0]}>
-            <planeGeometry args={[scale[0], scale[1]]} />
-            <BurnTransition
-                tmp_name="central"
-                uTextureMapA={textureA}
-                uTextureMapB={textureB}
-                uTextureCinematic={cinematicTexture || fallbackTexture}
-            />
+        <group>
+            <mesh ref={mesh} position={[0, 0, 0]}>
+                <planeGeometry args={[scale[0], scale[1]]} />
+                <BurnTransition
+                    tmp_name="central"
+                    uTextureMapA={textureA}
+                    uTextureMapB={textureB}
+                    uTextureCinematic={cinematicTexture || fallbackTexture}
+                />
+            </mesh>
+            {mode === 'splashscreen' && (
+                <mesh
+                    position={[0, 0, 0.001]}
+                    scale={[scale[0] * 0.2, scale[1] * 0.2, 1]}
+                    onClick={handleSplashClick}
+                    cursor="pointer"
+                >
+                    <planeGeometry args={[1, 1]} />
+                    <meshBasicMaterial
+                        color="#ffffff"
+                        opacity={0.5}
+                        transparent
+                        side={THREE.DoubleSide}
+                    />
+                </mesh>
+            )}
             {children}
-        </mesh>
+        </group>
     )
 }

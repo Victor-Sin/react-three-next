@@ -88,6 +88,9 @@ export const TextureProvider = ({ children }) => {
 
         // Center panel textures (highest priority)
         const centerPanelTextures = [
+            '/img/splash/left.png',
+            '/img/splash/right.png',
+            '/img/splash/center.png',
             '/img/center/map/chapter_one/map_centera.png',
             '/img/center/map/chapter_one/map_lefta.png',
             '/img/center/map/chapter_one/map_righta.png',

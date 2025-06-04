@@ -32,8 +32,6 @@ export const Central = React.memo((props) => {
     const baseWidth = baseHeight * aspect;
     const defaultScale = [baseWidth, baseHeight, 1];
 
-    console.log('[Central] Component initialized at', Date.now() - initTime.current, 'ms')
-    console.log('[Central] Completed scenes:', completedScenes, 'All completed:', allScenesCompleted)
 
     // Initialize GPGPU when renderer is available
     useEffect(() => {
@@ -85,7 +83,6 @@ export const Central = React.memo((props) => {
 
             // Wait for map transition to complete plus a small delay
             const timer = setTimeout(() => {
-                console.log('[Central] Starting placeholder animations at', Date.now() - initTime.current, 'ms')
                 setShowPlaceholders(true)
             }, 1500) // Reduced delay for faster response
 
@@ -100,17 +97,33 @@ export const Central = React.memo((props) => {
     // Handle chapter progression when all scenes are completed
     useEffect(() => {
         if (allScenesCompleted && !showChapterTransition) {
-            console.log('[Central] All scenes completed! Starting chapter transition...')
-            setShowChapterTransition(true)
-            setShowPlaceholders(false)
-            setRefsReady(false)
+            console.log('[Central] All scenes completed! Showing final placeholder...')
+            setShowPlaceholders(true) // Keep placeholders visible for the final one
+            setRefsReady(true)
 
-            // Wait a moment then trigger next chapter
-            setTimeout(() => {
-                dispatch(nextChapter())
-                setShowChapterTransition(false)
-                console.log('[Central] Chapter transition completed')
-            }, 3000) // 3 second transition
+            // Add a delay before showing the chapter transition
+            const handleFinalPlaceholderClick = () => {
+                setShowChapterTransition(true)
+                setShowPlaceholders(false)
+                setRefsReady(false)
+
+                // Wait a moment then trigger next chapter
+                setTimeout(() => {
+                    dispatch(nextChapter())
+                    setShowChapterTransition(false)
+                    console.log('[Central] Chapter transition completed')
+                }, 3000) // 3 second transition
+            }
+
+            // Add the final placeholder to the scene
+            if (placeholderRefs.current) {
+                const finalPlaceholder = {
+                    position: [0, 0, 0], // Center position
+                    onClick: handleFinalPlaceholderClick,
+                    type: 'chapter_transition'
+                }
+                setPlaceholders(prev => [...prev, finalPlaceholder])
+            }
         }
     }, [allScenesCompleted, showChapterTransition, dispatch])
 
@@ -156,7 +169,6 @@ export const Central = React.memo((props) => {
     }, [refsReady, showChapterTransition, completedScenes])
 
     const handleSquareClick = useCallback((objectType) => (e) => {
-        console.log('[Central] Square clicked at', Date.now() - initTime.current, 'ms')
 
         dispatch(placeObject(objectType))
         dispatch(setMode('scene'))
@@ -165,9 +177,7 @@ export const Central = React.memo((props) => {
     }, [dispatch])
 
     useEffect(() => {
-        console.log('[Central] Component mounted at', Date.now() - initTime.current, 'ms')
         return () => {
-            console.log('[Central] Component unmounted at', Date.now() - initTime.current, 'ms')
             // Kill any ongoing animations when component unmounts
             gsap.killTweensOf(placeholderRefs.current)
         }
@@ -188,10 +198,10 @@ export const Central = React.memo((props) => {
                 last={lastImage}
                 animationType={placedObject}
             >
-
+                {/* 
                 <Posable
                     scale={defaultScale}
-                />
+                /> */}
             </Scene>
             {showChapterTransition && (
                 <mesh position={[0, 0, 1]}>

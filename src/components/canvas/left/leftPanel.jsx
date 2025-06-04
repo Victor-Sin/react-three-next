@@ -24,11 +24,12 @@ export const LeftPanel = (props) => {
 
     // Get textures from context with memoization
     const { mapTexture, blackTexture } = useMemo(() => {
-        console.log('[LeftPanel] Initializing textures at', Date.now() - initTime.current, 'ms')
         const mapTexture = textures['/img/center/map/chapter_one/map_lefta.png']
-        const blackTexture = textures['/img/center/map/chapter_one/map_lefta.png'] // Use same texture for both
+        const blackTexture = mode === 'splashscreen' ?
+            textures['/img/splash/left.png'] : // Use splash texture in splashscreen mode
+            textures['/img/center/map/chapter_one/map_lefta.png']
         return { mapTexture, blackTexture }
-    }, [textures])
+    }, [textures, mode])
 
     // Initialize video texture
     useEffect(() => {
@@ -74,7 +75,6 @@ export const LeftPanel = (props) => {
 
     // Effect to handle mesh loading
     useEffect(() => {
-        console.log('[LeftPanel] Mesh loading effect triggered at', Date.now() - initTime.current, 'ms')
         if (leftPanelRef.current) {
             dispatch(setMeshLoaded({ panel: 'left', isLoaded: true }))
         }
@@ -110,7 +110,7 @@ export const LeftPanel = (props) => {
                 <planeGeometry args={[0.57, 0.57]} />
                 <BurnTransition
                     tmp_name="left"
-                    uTextureMapA={mapTexture}
+                    uTextureMapA={mode === 'splashscreen' ? blackTexture : mapTexture}
                     uTextureMapB={blackTexture}
                     uTextureCinematic={videoTexture || mapTexture}
                 />

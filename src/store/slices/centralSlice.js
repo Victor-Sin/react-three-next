@@ -12,7 +12,7 @@ const initialState = {
   placedObjects: [],
   completedScenes: [],
   chapter: 0,
-  mode: 'map',
+  mode: 'splashscreen',
   allScenesCompleted: false,
   transitions: {
     isTransitioning: false,
