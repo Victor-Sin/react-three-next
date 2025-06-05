@@ -41,7 +41,6 @@ export const Scene = ({ scale = [1, 1, 1], children }) => {
     const dispatch = useDispatch()
     const [cinematicTexture, setCinematicTexture] = useState(null)
 
-    const texture = useTexture('/img/center/map/chapter_one/map_centera.png')
     // Handle click in splashscreen mode
     const handleSplashClick = () => {
         if (mode === 'splashscreen') {
@@ -128,29 +127,14 @@ export const Scene = ({ scale = [1, 1, 1], children }) => {
         }
     }, [mode])
 
-    // Select textures based on current mode
-    const { textureA, textureB, fallbackTexture } = useMemo(() => {
-        console.log(mode, "MODE")
-        if (mode === 'splashscreen') {
-            return {
-                textureA: textures[mapTextures.splash],
-                textureB: textures[mapTextures.splash],
-                fallbackTexture: textures[mapTextures.splash]
-            }
-        } else if (mode === 'map') {
-            return {
-                textureA: textures[mapTextures.center],
-                textureB: textures[mapTextures.center],
-                fallbackTexture: textures[mapTextures.center]
-            }
-        } else {
-            return {
-                textureA: textures[sceneTextures[currentTextureIndex]] || textures[sceneTextures[0]],
-                textureB: textures[mapTextures.splash],
-                fallbackTexture: textures[mapTextures.splash]
-            }
-        }
-    }, [mode, textures, currentTextureIndex, mapTextures, sceneTextures])
+    // Selezione texture come in RightPanel
+    const { mapTexture, splashTexture } = useMemo(() => {
+        const mapTexture = textures['/img/center/map/chapter_one/map_centera.png']
+        const splashTexture = mode === 'splashscreen'
+            ? textures['/img/splash/center.png']
+            : textures['/img/center/map/chapter_one/map_centera.png']
+        return { mapTexture, splashTexture }
+    }, [textures, mode])
 
     if (!isLoaded) return null
 
@@ -160,9 +144,9 @@ export const Scene = ({ scale = [1, 1, 1], children }) => {
                 <planeGeometry args={[scale[0], scale[1]]} />
                 <BurnTransition
                     tmp_name="central"
-                    uTextureMapA={texture}
-                    uTextureMapB={texture}
-                    uTextureCinematic={cinematicTexture || fallbackTexture}
+                    uTextureMapA={mode === 'splashscreen' ? splashTexture : mapTexture}
+                    uTextureMapB={splashTexture}
+                    uTextureCinematic={cinematicTexture || mapTexture}
                 />
             </mesh>
             {mode === 'splashscreen' && (

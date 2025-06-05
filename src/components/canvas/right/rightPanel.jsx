@@ -8,6 +8,7 @@ import { BurnTransition } from '../center/elements/BurnTransitionMaterial'
 import { useTextures } from '@/contexts/Texturecontext'
 import { setMeshLoaded } from '@/store/slices/centralSlice'
 import { VideoTexture } from 'three'
+import { useTexture } from '@react-three/drei'
 
 export const RightPanel = (props) => {
     const rightPanelRef = useRef()
@@ -30,6 +31,7 @@ export const RightPanel = (props) => {
             textures['/img/center/map/chapter_one/map_righta.png']
         return { mapTexture, blackTexture }
     }, [textures, mode])
+
 
     // Mappa dei video per il pannello destro
     const videoMap = {
@@ -101,17 +103,7 @@ export const RightPanel = (props) => {
     // Don't render until essential textures are loaded and mesh is ready
     if (!essentialLoaded || !meshLoading.right) return null
 
-    // Show loading state for panel textures
-    if (!isLoaded) {
-        return (
-            <group>
-                <mesh scale={scale}>
-                    <planeGeometry args={[0.57, 0.57]} />
-                    <meshBasicMaterial color="#000000" opacity={0.5} transparent />
-                </mesh>
-            </group>
-        )
-    }
+
 
     return (
         <group>

@@ -10,9 +10,9 @@ export default function Scene({ ...props }) {
   return (
     <Canvas {...props}
       onCreated={(state) => {
-        state.gl.outputColorSpace = THREE.SRGBColorSpace
+        // state.gl.outputColorSpace = THREE.SRGBColorSpace
         // state.gl.toneMapping = THREE.AgXToneMapping
-        // state.gl.outputEncoding = THREE.sRGBEncoding
+        state.gl.outputEncoding = THREE.SRGBEncoding
         console.log(state.gl.colorSpace, "colorSpace")
       }}
     >
