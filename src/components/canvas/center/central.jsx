@@ -216,7 +216,7 @@ export const Central = React.memo((props) => {
                             texture={textures['/img/object/lightning.png']}
                             scale={0}
                             opacity={0}
-                            size={[.2, .2]}
+                            size={[.2, .3]}
                         />
                     )}
                     {!completedScenes.includes('boat') && (

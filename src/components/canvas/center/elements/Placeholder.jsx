@@ -44,7 +44,7 @@ const Placeholder = memo(forwardRef(({ position = [0, 0, 0], onClick, color = '#
             onPointerOut={handlePointerOut}
         >
             <planeGeometry args={[size[0], size[1], 32, 32]} />
-            <meshStandardMaterial
+            <meshBasicMaterial
                 color={texture ? undefined : (hovered ? '#ff4444' : color)}
                 map={texture || undefined}
                 metalness={0.5}
