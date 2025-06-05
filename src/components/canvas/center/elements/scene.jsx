@@ -5,6 +5,8 @@ import { useSelector, useDispatch } from 'react-redux'
 import { BurnTransition } from './BurnTransitionMaterial'
 import { resetScene, setMode, completeScene, setTransition } from '@/store/slices/centralSlice'
 import { VideoTexture } from 'three'
+import { Placeholder } from './Placeholder'
+import { useTexture } from '@react-three/drei'
 
 // Map textures for the triptych
 const mapTextures = {
@@ -24,10 +26,10 @@ const sceneTextures = [
 // Video paths for cinematics
 const cinematicVideos = {
     sun: '/img/scenes/sun.mp4',
-    bridge: '/img/scenes/bridge.mp4',
-    fire: '/img/scenes/fire.mp4',
-    star: '/img/scenes/fire.mp4',
-    chapter_transition: '/img/scenes/fire.mp4'
+    lightning: '/img/scenes/lightning.mp4',
+    boat: '/img/scenes/boat.mp4',
+    star: '/img/scenes/star.mp4',
+    chapter_transition: '/img/scenes/chapter_transition.mp4'
 }
 
 export const Scene = ({ scale = [1, 1, 1], children }) => {
@@ -39,6 +41,7 @@ export const Scene = ({ scale = [1, 1, 1], children }) => {
     const dispatch = useDispatch()
     const [cinematicTexture, setCinematicTexture] = useState(null)
 
+    const texture = useTexture('/img/center/map/chapter_one/map_centera.png')
     // Handle click in splashscreen mode
     const handleSplashClick = () => {
         if (mode === 'splashscreen') {
@@ -157,26 +160,20 @@ export const Scene = ({ scale = [1, 1, 1], children }) => {
                 <planeGeometry args={[scale[0], scale[1]]} />
                 <BurnTransition
                     tmp_name="central"
-                    uTextureMapA={textureA}
-                    uTextureMapB={textureB}
+                    uTextureMapA={texture}
+                    uTextureMapB={texture}
                     uTextureCinematic={cinematicTexture || fallbackTexture}
                 />
             </mesh>
             {mode === 'splashscreen' && (
-                <mesh
+                <Placeholder
                     position={[0, 0, 0.001]}
-                    scale={[scale[0] * 0.2, scale[1] * 0.2, 1]}
                     onClick={handleSplashClick}
-                    cursor="pointer"
-                >
-                    <planeGeometry args={[1, 1]} />
-                    <meshBasicMaterial
-                        color="#ffffff"
-                        opacity={0.5}
-                        transparent
-                        side={THREE.DoubleSide}
-                    />
-                </mesh>
+                    texture={textures['/img/object/sunmoon.png']}
+                    scale={1}
+                    opacity={1}
+                    size={[1, 1]}
+                />
             )}
             {children}
         </group>

@@ -11,7 +11,8 @@ const PRIORITY_GROUPS = {
     ESSENTIAL: 0, // Splash screen and basic UI
     CENTER_PANEL: 1, // Center panel textures (highest priority for panels)
     PANELS: 2,    // Left and right panel textures
-    SCENE: 3      // Additional scene textures
+    SCENE: 3,     // Additional scene textures
+    OBJECTS: 4    // Object textures (sun, lightning, boat)
 }
 
 export const TextureProvider = ({ children }) => {
@@ -48,12 +49,13 @@ export const TextureProvider = ({ children }) => {
                 loader.load(
                     path,
                     (texture) => {
-                        texture.colorSpace = THREE.SRGBColorSpace
-                        texture.anisotropy = 4
-                        texture.minFilter = THREE.LinearFilter
-                        texture.magFilter = THREE.LinearFilter
+                        // texture.colorSpace = THREE.SRGBColorSpace
+                        // texture.anisotropy = 4
+                        // texture.minFilter = THREE.LinearFilter
+                        // texture.magFilter = THREE.LinearFilter
                         loadedCount++
                         setLoadingProgress((loadedCount / totalTextures) * 100)
+                        // texture.outputColorSpace = THREE.NoColorSpace
                         resolve({ path, texture })
                     },
                     undefined,
@@ -98,14 +100,14 @@ export const TextureProvider = ({ children }) => {
 
         // Other panel textures
         const panelTextures = [
-            '/img/tryptique/moon/moon.png',
-            '/img/tryptique/moon/moon_1.png',
-            '/img/tryptique/moon/moon_2.png',
-            '/img/tryptique/moon/moon_3.png',
-            '/img/tryptique/sun/sun.png',
-            '/img/tryptique/sun/sun_1.png',
-            '/img/tryptique/sun/sun_2.png',
-            '/img/tryptique/sun/sun_3.png'
+            // '/img/tryptique/moon/moon.png',
+            // '/img/tryptique/moon/moon_1.png',
+            // '/img/tryptique/moon/moon_2.png',
+            // '/img/tryptique/moon/moon_3.png',
+            // '/img/tryptique/sun/sun.png',
+            // '/img/tryptique/sun/sun_1.png',
+            // '/img/tryptique/sun/sun_2.png',
+            // '/img/tryptique/sun/sun_3.png'
         ]
 
         // Additional scene textures
@@ -113,6 +115,15 @@ export const TextureProvider = ({ children }) => {
             '/img/center/lake.png',
             '/img/center/temple.png',
             '/img/center/mountain.png'
+        ]
+
+        // Object textures (new group)
+        const objectTextures = [
+            '/img/object/sun.png',
+            '/img/object/lightning.png',
+            '/img/object/boat.png',
+            '/img/object/sunmoon.png',
+            '/img/object/star.png',
         ]
 
         const loadAllTextures = async () => {
@@ -128,6 +139,9 @@ export const TextureProvider = ({ children }) => {
 
                 // Finally load additional scene textures
                 await loadTextureGroup(loader, sceneTextures, PRIORITY_GROUPS.SCENE)
+
+                // Load object textures last
+                await loadTextureGroup(loader, objectTextures, PRIORITY_GROUPS.OBJECTS)
 
                 setIsLoaded(true)
                 setError(null)

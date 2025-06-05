@@ -36,7 +36,7 @@ export const useTextureLoader = (texturePath, options = {}) => {
                 loader.load(
                     texturePath,
                     (texture) => {
-                        texture.colorSpace = colorSpace
+                        texture.outputColorSpace = colorSpace
                         texture.anisotropy = anisotropy
                         resolve(texture)
                     },
@@ -61,7 +61,7 @@ export const useTextureLoader = (texturePath, options = {}) => {
                         loader.load(
                             fallback,
                             (texture) => {
-                                texture.colorSpace = colorSpace
+                                texture.outputColorSpace = colorSpace
                                 texture.anisotropy = anisotropy
                                 resolve(texture)
                             },

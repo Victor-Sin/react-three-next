@@ -67,7 +67,7 @@ const centralSlice = createSlice({
       }
       
       // Check if all three scenes are completed
-      const requiredScenes = ['sun', 'bridge', 'fire']
+      const requiredScenes = ['sun', 'lightning', 'boat']
       const allCompleted = requiredScenes.every(scene => 
         state.completedScenes.includes(scene)
       )

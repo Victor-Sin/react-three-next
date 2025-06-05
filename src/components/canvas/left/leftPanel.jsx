@@ -13,7 +13,7 @@ export const LeftPanel = (props) => {
     const leftPanelRef = useRef()
     const videoRef = useRef()
     const { viewport } = useThree()
-    const { mode, meshLoading } = useSelector(state => state.central)
+    const { mode, meshLoading, placedObject } = useSelector(state => state.central)
     const { textures, isLoaded, essentialLoaded } = useTextures()
     const dispatch = useDispatch()
     const [videoTexture, setVideoTexture] = useState(null)
@@ -31,12 +31,21 @@ export const LeftPanel = (props) => {
         return { mapTexture, blackTexture }
     }, [textures, mode])
 
+    // Mappa dei video per il pannello sinistro
+    const videoMap = {
+        sun: '/img/emotions/sun_left.mp4',
+        lightning: '/img/emotions/lightning_left.mp4',
+        boat: '/img/emotions/boat_left.mp4',
+    }
+
     // Initialize video texture
     useEffect(() => {
         if (mode === 'scene' && !videoTexture) {
             console.log('[LeftPanel] Initializing video texture')
             const video = document.createElement('video')
-            video.src = '/img/emotions/sun_wtf.mp4'
+            const selectedVideo = videoMap[placedObject] || videoMap['sun']
+            console.log('[LeftPanel] Video selezionato:', selectedVideo)
+            video.src = selectedVideo
             video.loop = true
             video.muted = true
             video.playsInline = true
@@ -57,7 +66,7 @@ export const LeftPanel = (props) => {
                 console.error('[LeftPanel] Error playing video:', error)
             })
         }
-    }, [mode, videoTexture])
+    }, [mode, videoTexture, placedObject])
 
     // Clean up video when returning to map mode
     useEffect(() => {

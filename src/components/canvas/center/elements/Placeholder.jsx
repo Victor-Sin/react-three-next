@@ -4,7 +4,7 @@ import { useRef, useState, useCallback, memo, forwardRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 
-const Placeholder = memo(forwardRef(({ position = [0, 0, 0], onClick, color = '#ff0000', scale = 1, opacity = 1 }, ref) => {
+const Placeholder = memo(forwardRef(({ position = [0, 0, 0], onClick, color = '#ff0000', scale = 1, opacity = 1, texture = null, size = [0.3, 0.3] }, ref) => {
     const meshRef = useRef()
     const [hovered, setHovered] = useState(false)
     const [clicked, setClicked] = useState(false)
@@ -43,9 +43,10 @@ const Placeholder = memo(forwardRef(({ position = [0, 0, 0], onClick, color = '#
             onPointerOver={handlePointerOver}
             onPointerOut={handlePointerOut}
         >
-            <planeGeometry args={[0.3, 0.3, 32, 32]} />
+            <planeGeometry args={[size[0], size[1], 32, 32]} />
             <meshStandardMaterial
-                color={hovered ? '#ff4444' : color}
+                color={texture ? undefined : (hovered ? '#ff4444' : color)}
+                map={texture || undefined}
                 metalness={0.5}
                 roughness={0.2}
                 transparent

@@ -102,6 +102,10 @@ export const BurnTransitionMaterial = shaderMaterial(
       vec4 colorMapA = texture2D(uTextureMapA, uvMapA);
       vec4 colorMapB = texture2D(uTextureMapB, uvMapA);
 
+      float bwA = ( colorMapA.r + colorMapA.g + colorMapA.b ) / 3.;
+      float bwB = ( colorMapB.r + colorMapB.g + colorMapB.b ) / 3.;
+      float bwCinematic = ( colorCinematic.r + colorCinematic.g + colorCinematic.b ) / 3.;
+
       // === MÉLANGE DES CARTES ===
       // Interpole entre les deux cartes selon la progression
       vec4 map = mix(colorMapA, colorMapB, getDiffMap(uv));
@@ -113,7 +117,23 @@ export const BurnTransitionMaterial = shaderMaterial(
 
       // === MÉLANGE FINAL ===
       // Interpole entre la carte et la cinématique
-      vec4 final = mix(map, colorCinematic, getDiffCinematic(uvCinematic));
+      // vec4 final = mix(colorMapA, colorCinematic, uProgressCinematic * uv.x * bwA);
+      vec4 final = vec4(0.,0.,0.,1.);
+      if( uProgressCinematic < .5 ) {
+        // on map le pourcentage de 0 a .5 > 0 a 1
+        float percent = uProgressCinematic * 2.;
+        float b = mix( 0., 1., step( percent, bwA ) );
+        // float b = mix( 0., 1., smoothstep(percent - 0.05, percent + 0.05, bwA));
+        final = colorMapA * b;
+        // final = vec4( vec3( b ), 1.);
+      } else {
+       // On map le pourcentage de .5 a 1 > 0 a .5 > 0 a 1, et on l'inverse
+        float percent = 1. - (uProgressCinematic - .5) * 2.;
+        // float b = step(percent, bwCinematic);
+        float b = mix(0.0, 1.0, step(percent, bwCinematic));
+        // float b = mix(0.0, 1.0, smoothstep(percent - 0.05, percent + 0.05, bwCinematic));
+        final = colorCinematic * b;
+      }
       
       // === EFFET DE SPLATTING (uniquement pour le panneau central) ===
       if(!uSide) {
@@ -125,7 +145,9 @@ export const BurnTransitionMaterial = shaderMaterial(
         final.rgb = final.rgb +  strengthSplatting * vec3(0.561,0.451,0.255);
       }
 
+      // gl_FragColor = vec4( vec3( bwA ), 1.);
       gl_FragColor = final;
+      // gl_FragColor = vec4( sin( uv.x * 10. ), 0., 0., 1.);
     }
   `
 )
@@ -150,7 +172,7 @@ const handleTransitionAnimationIn = ({ materialRef, dispatch, currentTransition,
   if (isMap) {
     GSAP.to(materialRef.current, {
       uProgressMap: 1,
-      duration: 1,
+      duration: 3,
       ease: 'ease.inOut',
       onComplete: () => {
         dispatch(setTransitionAction({ 
@@ -164,7 +186,7 @@ const handleTransitionAnimationIn = ({ materialRef, dispatch, currentTransition,
   } else {
     GSAP.to(materialRef.current, {
       uProgressCinematic: 1,
-      duration: 1,
+      duration: 3,
       ease: 'ease.inOut',
       onComplete: () => {
         dispatch(setTransitionAction({ 

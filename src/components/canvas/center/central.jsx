@@ -9,6 +9,7 @@ import { Posable } from './elements/posable'
 import { Placeholder } from './elements/Placeholder'
 import { gsap } from 'gsap'
 import GPGPU from '@/hooks/gpgpu'
+import { useTextures } from '@/contexts/Texturecontext'
 
 
 export const Central = React.memo((props) => {
@@ -19,14 +20,15 @@ export const Central = React.memo((props) => {
     const initTime = useRef(Date.now())
     const placeholderRefs = useRef({
         sun: null,
-        bridge: null,
-        fire: null,
+        lightning: null,
+        boat: null,
         star: null
     })
     const [refsReady, setRefsReady] = useState(false)
     const [showChapterTransition, setShowChapterTransition] = useState(false)
     const [gpgpu, setGPGPU] = useState(null)
     const gpgpuRef = useRef(null)
+    const { textures, isLoaded } = useTextures()
 
     const aspect = 3000 / 2000;
     const baseHeight = viewport.height;
@@ -59,7 +61,7 @@ export const Central = React.memo((props) => {
     // Check if all visible refs are ready
     useEffect(() => {
         if (showPlaceholders && !showChapterTransition) {
-            const visiblePlaceholders = ['sun', 'bridge', 'fire'].filter(
+            const visiblePlaceholders = ['sun', 'lightning', 'boat'].filter(
                 scene => !completedScenes.includes(scene)
             )
 
@@ -114,7 +116,7 @@ export const Central = React.memo((props) => {
             // Get visible placeholders including star if all scenes completed
             const visiblePlaceholders = allScenesCompleted
                 ? ['star']
-                : ['sun', 'bridge', 'fire'].filter(scene => !completedScenes.includes(scene))
+                : ['sun', 'lightning', 'boat'].filter(scene => !completedScenes.includes(scene))
 
             visiblePlaceholders.forEach((scene, index) => {
                 const ref = placeholderRefs.current[scene]
@@ -183,9 +185,9 @@ export const Central = React.memo((props) => {
                 animationType={placedObject}
             >
 
-                <Posable
+                {/* <Posable
                     scale={defaultScale}
-                />
+                /> */}
             </Scene>
             {showChapterTransition && (
                 <mesh position={[0, 0, 1]}>
@@ -198,31 +200,34 @@ export const Central = React.memo((props) => {
                     {!completedScenes.includes('sun') && (
                         <Placeholder
                             ref={el => placeholderRefs.current.sun = el}
-                            position={[-1, 0, 2]}
+                            position={[.8, .58, 2]}
                             onClick={handleSquareClick('sun')}
-                            color="#ff6b6b"
+                            texture={textures['/img/object/sun.png']}
                             scale={0}
                             opacity={0}
+                            size={[.2, .2]}
                         />
                     )}
-                    {!completedScenes.includes('bridge') && (
+                    {!completedScenes.includes('lightning') && (
                         <Placeholder
-                            ref={el => placeholderRefs.current.bridge = el}
-                            position={[0, -1, 2]}
-                            onClick={handleSquareClick('bridge')}
-                            color="#ff6b6b"
+                            ref={el => placeholderRefs.current.lightning = el}
+                            position={[-.2, .5, 2]}
+                            onClick={handleSquareClick('lightning')}
+                            texture={textures['/img/object/lightning.png']}
                             scale={0}
                             opacity={0}
+                            size={[.2, .2]}
                         />
                     )}
-                    {!completedScenes.includes('fire') && (
+                    {!completedScenes.includes('boat') && (
                         <Placeholder
-                            ref={el => placeholderRefs.current.fire = el}
-                            position={[1, 0, 2]}
-                            onClick={handleSquareClick('fire')}
-                            color="#ff6b6b"
+                            ref={el => placeholderRefs.current.boat = el}
+                            position={[1, -.8, 2]}
+                            onClick={handleSquareClick('boat')}
+                            texture={textures['/img/object/boat.png']}
                             scale={0}
                             opacity={0}
+                            size={[.3, .3]}
                         />
                     )}
                     {allScenesCompleted && (
@@ -230,13 +235,17 @@ export const Central = React.memo((props) => {
                             ref={el => placeholderRefs.current.star = el}
                             position={[0, 0, 2]}
                             onClick={handleSquareClick('star')} // Use the same handler pattern
+                            texture={textures['/img/object/star.png']}
                             color="#ffd700"
                             scale={0}
                             opacity={0}
+                            size={[.5, .5]}
                         />
                     )}
                 </>
             )}
+
+
         </group>
     )
 })
