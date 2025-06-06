@@ -18,7 +18,6 @@ export default class GPGPU {
         GPGPU.instance = this;
 
         if (!renderer) {
-            console.error('GPGPU: Renderer is required');
             return;
         }
 
@@ -40,9 +39,7 @@ export default class GPGPU {
             this.initiateRenderer();
 
             this.isInitialized = true;
-            console.log('GPGPU initialized successfully');
         } catch (error) {
-            console.error('GPGPU initialization failed:', error);
         }
     }
 
@@ -56,7 +53,6 @@ export default class GPGPU {
             512,
             this.renderer
         );
-        console.log('GPGPU Renderer created:', this.gpgpuRenderer);
     }
 
     createDataTextures() {

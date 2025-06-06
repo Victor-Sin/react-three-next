@@ -7,7 +7,6 @@ import { setTransition, setSideTransition } from '@/store/slices/centralSlice'
 import { gsap as GSAP } from 'gsap';
 import { useTexture } from '@react-three/drei'
 import GPGPU from '@/hooks/gpgpu'
-import img from '../../../../../public/img/center/map/chapter_one/map_lefta.png'
 
 
 
@@ -159,8 +158,15 @@ extend({ BurnTransitionMaterial })
  * Animation de transition d'entrée
  */
 const handleTransitionAnimationIn = ({ materialRef, dispatch, currentTransition, setTransitionAction, isMap = true }) => {
-  // Prevent triggering if already transitioning or completed
-  if (currentTransition.isTransitioning || currentTransition.completed) return;
+  // Prevent triggering if already transitioning
+  if (currentTransition.isTransitioning) return;
+  
+  // Reset progress to initial state before starting new animation
+  if (isMap) {
+    materialRef.current.uProgressMap = 0;
+  } else {
+    materialRef.current.uProgressCinematic = 0;
+  }
   
   dispatch(setTransitionAction({ 
     isTransitioning: true, 
@@ -206,6 +212,13 @@ const handleTransitionAnimationIn = ({ materialRef, dispatch, currentTransition,
 const handleTransitionAnimationOut = ({ materialRef, dispatch, currentTransition, setTransitionAction, isMap = true }) => {
   // Prevent triggering if already transitioning
   if (currentTransition.isTransitioning) return;
+  
+  // Reset progress to initial state before starting new animation
+  if (isMap) {
+    materialRef.current.uProgressMap = 1;
+  } else {
+    materialRef.current.uProgressCinematic = 1;
+  }
   
   dispatch(setTransitionAction({ 
     isTransitioning: true, 
@@ -285,25 +298,23 @@ export const BurnTransition = ({ tmp_name, uTextureMapA, uTextureMapB, uTextureC
     setGPGPU(gpgpu)
 
     if (isLaunchedRef.current) {
-      // Only trigger animations if not already transitioning
-      if (!currentTransition.isTransitioning) {
-        if (currentTransition.shouldTransition && !currentTransition.completed) {
-          handleTransitionAnimationOut({
-            materialRef,
-            dispatch,
-            currentTransition,
-            setTransitionAction,
-            isMap: mode === 'map'
-          })
-        } else if (!currentTransition.completed) {
-          handleTransitionAnimationIn({
-            materialRef,
-            dispatch,
-            currentTransition,
-            setTransitionAction,
-            isMap: mode === 'map'
-          })
-        }
+      // Reset transition state when mode changes
+      if (currentTransition.shouldTransition) {
+        handleTransitionAnimationOut({
+          materialRef,
+          dispatch,
+          currentTransition,
+          setTransitionAction,
+          isMap: mode === 'map'
+        })
+      } else {
+        handleTransitionAnimationIn({
+          materialRef,
+          dispatch,
+          currentTransition,
+          setTransitionAction,
+          isMap: mode === 'map'
+        })
       }
     }
     isLaunchedRef.current = true
@@ -316,9 +327,8 @@ export const BurnTransition = ({ tmp_name, uTextureMapA, uTextureMapB, uTextureC
     }
   }, [
     currentTransition.shouldTransition,
-    currentTransition.completed,
-    gl,
     mode,
+    gl,
     tmp_name,
     dispatch,
     setTransitionAction,

@@ -109,7 +109,6 @@ export const Central = React.memo((props) => {
     // Effect to handle animations when refs are ready
     useEffect(() => {
         if (refsReady && !showChapterTransition) {
-            console.log('[Central] Refs ready, starting animations at', Date.now() - initTime.current, 'ms')
 
             const tl = gsap.timeline()
 
