@@ -76,6 +76,36 @@ const centralSlice = createSlice({
         state.allScenesCompleted = true
       }
     },
+    startTransition: (state) => {
+      // Set transition state for all panels
+      state.transitions = {
+        isTransitioning: true,
+        shouldTransition: true,
+        name: "central",
+        type: 'burn'
+      }
+      state.sideTransitions = {
+        isTransitioning: true,
+        shouldTransition: true,
+        name: "side",
+        type: 'burn'
+      }
+    },
+    completeTransition: (state) => {
+      // Reset transition state for all panels
+      state.transitions = {
+        isTransitioning: false,
+        shouldTransition: false,
+        name: "central",
+        type: 'burn'
+      }
+      state.sideTransitions = {
+        isTransitioning: false,
+        shouldTransition: false,
+        name: "side",
+        type: 'burn'
+      }
+    },
     setTransition: (state, action) => {
       state.transitions = {
         ...state.transitions,
@@ -103,6 +133,12 @@ const centralSlice = createSlice({
       state.allScenesCompleted = false
       state.currentImage = 0
       state.lastImage = 0
+      state.mode = 'map'
+      state.isStoryActive = false
+      state.storySegment = null
+      state.placedObject = null
+      state.sunReaction = null
+      state.moonReaction = null
     },
     setMode: (state, action) => {
       state.mode = action.payload
@@ -120,6 +156,8 @@ export const {
   placeObject,
   resetScene,
   completeScene,
+  startTransition,
+  completeTransition,
   setTransition,
   setSideTransition,
   setReactions,

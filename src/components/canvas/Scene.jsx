@@ -13,7 +13,6 @@ export default function Scene({ ...props }) {
         // state.gl.outputColorSpace = THREE.SRGBColorSpace
         // state.gl.toneMapping = THREE.AgXToneMapping
         state.gl.outputEncoding = THREE.SRGBEncoding
-        console.log(state.gl.colorSpace, "colorSpace")
       }}
     >
       {/* @ts-ignore */}

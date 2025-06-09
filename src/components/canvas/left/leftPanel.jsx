@@ -13,7 +13,7 @@ export const LeftPanel = (props) => {
     const leftPanelRef = useRef()
     const videoRef = useRef()
     const { viewport } = useThree()
-    const { mode, meshLoading, placedObject } = useSelector(state => state.central)
+    const { mode, meshLoading, placedObject, allScenesCompleted, chapter } = useSelector(state => state.central)
     const { textures, isLoaded, essentialLoaded } = useTextures()
     const dispatch = useDispatch()
     const [videoTexture, setVideoTexture] = useState(null)
@@ -24,27 +24,38 @@ export const LeftPanel = (props) => {
 
     // Get textures from context with memoization
     const { mapTexture, blackTexture } = useMemo(() => {
-        const mapTexture = textures['/img/center/map/chapter_one/map_lefta.png']
+        let mapTexture
+        if (chapter === 1) {
+            mapTexture = textures['/img/center/map/chapter_two/map_left.png']
+        } else {
+            mapTexture = allScenesCompleted
+                ? textures['/img/center/map/chapter_one_night/map_left.png']
+                : textures['/img/center/map/chapter_one/map_left.png']
+        }
         const blackTexture = mode === 'splashscreen' ?
-            textures['/img/splash/left.png'] : // Use splash texture in splashscreen mode
-            textures['/img/center/map/chapter_one/map_lefta.png']
+            textures['/img/splash/left.png'] :
+            chapter === 1
+                ? textures['/img/center/map/chapter_two/map_left.png']
+                : allScenesCompleted
+                    ? textures['/img/center/map/chapter_one_night/map_left.png']
+                    : textures['/img/center/map/chapter_one/map_left.png']
         return { mapTexture, blackTexture }
-    }, [textures, mode])
+    }, [textures, mode, allScenesCompleted, chapter])
 
     // Mappa dei video per il pannello sinistro
     const videoMap = {
         sun: '/img/emotions/sun_left.mp4',
         lightning: '/img/emotions/lightning_left.mp4',
         boat: '/img/emotions/boat_left.mp4',
+        star: '/img/emotions/star_left.mp4',
+        fire: '/img/emotions/star_left.mp4',
     }
 
     // Initialize video texture
     useEffect(() => {
         if (mode === 'scene' && !videoTexture) {
-            console.log('[LeftPanel] Initializing video texture')
             const video = document.createElement('video')
             const selectedVideo = videoMap[placedObject] || videoMap['sun']
-            console.log('[LeftPanel] Video selezionato:', selectedVideo)
             video.src = selectedVideo
             video.loop = true
             video.muted = true
@@ -53,7 +64,6 @@ export const LeftPanel = (props) => {
             videoRef.current = video
 
             video.addEventListener('loadeddata', () => {
-                console.log('[LeftPanel] Video loaded')
                 const texture = new VideoTexture(video)
                 texture.minFilter = THREE.LinearFilter
                 texture.magFilter = THREE.LinearFilter
@@ -61,7 +71,6 @@ export const LeftPanel = (props) => {
             })
 
             video.play().then(() => {
-                console.log('[LeftPanel] Video started playing')
             }).catch(error => {
                 console.error('[LeftPanel] Error playing video:', error)
             })
@@ -75,7 +84,6 @@ export const LeftPanel = (props) => {
             videoRef.current.pause()
             videoRef.current.src = ''
             videoRef.current.load()
-            // Don't immediately set to null, let the transition complete first
             setTimeout(() => {
                 setVideoTexture(null)
             }, 1000)
@@ -100,18 +108,6 @@ export const LeftPanel = (props) => {
 
     // Don't render until essential textures are loaded and mesh is ready
     if (!essentialLoaded || !meshLoading.left) return null
-
-    // Show loading state for panel textures
-    if (!isLoaded) {
-        return (
-            <group>
-                <mesh scale={scale}>
-                    <planeGeometry args={[0.57, 0.57]} />
-                    <meshBasicMaterial color="#000000" opacity={0.5} transparent />
-                </mesh>
-            </group>
-        )
-    }
 
     return (
         <group>

@@ -15,14 +15,15 @@ import { useTextures } from '@/contexts/Texturecontext'
 export const Central = React.memo((props) => {
     const { viewport, gl } = useThree()
     const dispatch = useDispatch()
-    const { isStoryActive, placedObject, currentImage, lastImage, mode, allScenesCompleted, completedScenes } = useSelector(state => state.central)
+    const { isStoryActive, placedObject, currentImage, lastImage, mode, allScenesCompleted, completedScenes, chapter } = useSelector(state => state.central)
     const [showPlaceholders, setShowPlaceholders] = useState(false)
     const initTime = useRef(Date.now())
     const placeholderRefs = useRef({
         sun: null,
         lightning: null,
         boat: null,
-        star: null
+        star: null,
+        fire: null
     })
     const [refsReady, setRefsReady] = useState(false)
     const [showChapterTransition, setShowChapterTransition] = useState(false)
@@ -43,7 +44,7 @@ export const Central = React.memo((props) => {
                 const gpgpuInstance = new GPGPU(gl)
                 gpgpuRef.current = gpgpuInstance
                 setGPGPU(gpgpuInstance)
-                console.log('GPGPU instance created successfully')
+                // console.log('GPGPU instance created successfully')
             } catch (error) {
                 console.error('Failed to create GPGPU instance:', error)
             }
@@ -61,9 +62,9 @@ export const Central = React.memo((props) => {
     // Check if all visible refs are ready
     useEffect(() => {
         if (showPlaceholders && !showChapterTransition) {
-            const visiblePlaceholders = ['sun', 'lightning', 'boat'].filter(
-                scene => !completedScenes.includes(scene)
-            )
+            const visiblePlaceholders = chapter === 1
+                ? ['sun', 'boat', 'fire'].filter(scene => !completedScenes.includes(scene))
+                : ['sun', 'lightning', 'boat'].filter(scene => !completedScenes.includes(scene))
 
             const allVisibleRefsReady = visiblePlaceholders.every(
                 scene => placeholderRefs.current[scene]
@@ -73,7 +74,7 @@ export const Central = React.memo((props) => {
                 setRefsReady(true)
             }
         }
-    }, [showPlaceholders, showChapterTransition, completedScenes])
+    }, [showPlaceholders, showChapterTransition, completedScenes, chapter])
 
     // Effect to show placeholders after map is visible
     useEffect(() => {
@@ -109,13 +110,14 @@ export const Central = React.memo((props) => {
     // Effect to handle animations when refs are ready
     useEffect(() => {
         if (refsReady && !showChapterTransition) {
-
             const tl = gsap.timeline()
 
             // Get visible placeholders including star if all scenes completed
             const visiblePlaceholders = allScenesCompleted
                 ? ['star']
-                : ['sun', 'lightning', 'boat'].filter(scene => !completedScenes.includes(scene))
+                : chapter === 1
+                    ? ['sun', 'boat', 'fire'].filter(scene => !completedScenes.includes(scene))
+                    : ['sun', 'lightning', 'boat'].filter(scene => !completedScenes.includes(scene))
 
             visiblePlaceholders.forEach((scene, index) => {
                 const ref = placeholderRefs.current[scene]
@@ -142,7 +144,7 @@ export const Central = React.memo((props) => {
                 tl.kill()
             }
         }
-    }, [refsReady, showChapterTransition, completedScenes, allScenesCompleted])
+    }, [refsReady, showChapterTransition, completedScenes, allScenesCompleted, chapter])
 
     const handleSquareClick = useCallback((objectType) => (e) => {
 
@@ -184,9 +186,9 @@ export const Central = React.memo((props) => {
                 animationType={placedObject}
             >
 
-                {/* <Posable
+                <Posable
                     scale={defaultScale}
-                /> */}
+                />
             </Scene>
             {showChapterTransition && (
                 <mesh position={[0, 0, 1]}>
@@ -196,44 +198,84 @@ export const Central = React.memo((props) => {
             )}
             {!isStoryActive && showPlaceholders && !showChapterTransition && (
                 <>
-                    {!completedScenes.includes('sun') && (
-                        <Placeholder
-                            ref={el => placeholderRefs.current.sun = el}
-                            position={[.8, .58, 2]}
-                            onClick={handleSquareClick('sun')}
-                            texture={textures['/img/object/sun.png']}
-                            scale={0}
-                            opacity={0}
-                            size={[.2, .2]}
-                        />
-                    )}
-                    {!completedScenes.includes('lightning') && (
-                        <Placeholder
-                            ref={el => placeholderRefs.current.lightning = el}
-                            position={[-.2, .5, 2]}
-                            onClick={handleSquareClick('lightning')}
-                            texture={textures['/img/object/lightning.png']}
-                            scale={0}
-                            opacity={0}
-                            size={[.2, .3]}
-                        />
-                    )}
-                    {!completedScenes.includes('boat') && (
-                        <Placeholder
-                            ref={el => placeholderRefs.current.boat = el}
-                            position={[1, -.8, 2]}
-                            onClick={handleSquareClick('boat')}
-                            texture={textures['/img/object/boat.png']}
-                            scale={0}
-                            opacity={0}
-                            size={[.3, .3]}
-                        />
+                    {chapter === 1 ? (
+                        <>
+                            {!completedScenes.includes('sun') && (
+                                <Placeholder
+                                    ref={el => placeholderRefs.current.sun = el}
+                                    position={[1.1, .58, 2]}
+                                    onClick={handleSquareClick('sun')}
+                                    texture={textures['/img/object/sun.png']}
+                                    scale={0}
+                                    opacity={0}
+                                    size={[.15, .15]}
+                                />
+                            )}
+                            {!completedScenes.includes('boat') && (
+                                <Placeholder
+                                    ref={el => placeholderRefs.current.boat = el}
+                                    position={[.2, -.8, 2]}
+                                    onClick={handleSquareClick('boat')}
+                                    texture={textures['/img/object/boat.png']}
+                                    scale={0}
+                                    opacity={0}
+                                    size={[.2, .2]}
+                                />
+                            )}
+                            {!completedScenes.includes('fire') && (
+                                <Placeholder
+                                    ref={el => placeholderRefs.current.fire = el}
+                                    position={[-.2, -.5, 2]}
+                                    onClick={handleSquareClick('fire')}
+                                    texture={textures['/img/object/fire.png']}
+                                    scale={0}
+                                    opacity={0}
+                                    size={[.1, .15]}
+                                />
+                            )}
+                        </>
+                    ) : (
+                        <>
+                            {!completedScenes.includes('sun') && (
+                                <Placeholder
+                                    ref={el => placeholderRefs.current.sun = el}
+                                    position={[.8, .58, 2]}
+                                    onClick={handleSquareClick('sun')}
+                                    texture={textures['/img/object/sun.png']}
+                                    scale={0}
+                                    opacity={0}
+                                    size={[.15, .15]}
+                                />
+                            )}
+                            {!completedScenes.includes('lightning') && (
+                                <Placeholder
+                                    ref={el => placeholderRefs.current.lightning = el}
+                                    position={[-.2, .5, 2]}
+                                    onClick={handleSquareClick('lightning')}
+                                    texture={textures['/img/object/lightning.png']}
+                                    scale={0}
+                                    opacity={0}
+                                    size={[.15, .15]}
+                                />
+                            )}
+                            {!completedScenes.includes('boat') && (
+                                <Placeholder
+                                    ref={el => placeholderRefs.current.boat = el}
+                                    position={[1, -.8, 2]}
+                                    onClick={handleSquareClick('boat')}
+                                    texture={textures['/img/object/boat.png']}
+                                    scale={0}
+                                    opacity={0}
+                                    size={[.2, .2]}
+                                />
+                            )}
+                        </>
                     )}
                     {allScenesCompleted && (
                         <Placeholder
                             ref={el => placeholderRefs.current.star = el}
                             position={[0, 0, 2]}
-                            onClick={handleSquareClick('star')} // Use the same handler pattern
+                            onClick={handleStarClick}
                             texture={textures['/img/object/star.png']}
                             color="#ffd700"
                             scale={0}

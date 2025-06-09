@@ -14,7 +14,7 @@ export const RightPanel = (props) => {
     const rightPanelRef = useRef()
     const videoRef = useRef()
     const { viewport } = useThree()
-    const { mode, meshLoading, placedObject } = useSelector(state => state.central)
+    const { mode, meshLoading, placedObject, allScenesCompleted, chapter } = useSelector(state => state.central)
     const { textures, isLoaded, essentialLoaded } = useTextures()
     const dispatch = useDispatch()
     const [videoTexture, setVideoTexture] = useState(null)
@@ -25,12 +25,23 @@ export const RightPanel = (props) => {
 
     // Get textures from context with memoization
     const { mapTexture, blackTexture } = useMemo(() => {
-        const mapTexture = textures['/img/center/map/chapter_one/map_righta.png']
+        let mapTexture
+        if (chapter === 1) {
+            mapTexture = textures['/img/center/map/chapter_two/map_right.png']
+        } else {
+            mapTexture = allScenesCompleted
+                ? textures['/img/center/map/chapter_one_night/map_right.png']
+                : textures['/img/center/map/chapter_one/map_right.png']
+        }
         const blackTexture = mode === 'splashscreen' ?
             textures['/img/splash/right.png'] : // Use splash texture in splashscreen mode
-            textures['/img/center/map/chapter_one/map_righta.png']
+            chapter === 1
+                ? textures['/img/center/map/chapter_two/map_right.png']
+                : allScenesCompleted
+                    ? textures['/img/center/map/chapter_one_night/map_right.png']
+                    : textures['/img/center/map/chapter_one/map_right.png']
         return { mapTexture, blackTexture }
-    }, [textures, mode])
+    }, [textures, mode, allScenesCompleted, chapter])
 
 
     // Mappa dei video per il pannello destro
@@ -38,15 +49,15 @@ export const RightPanel = (props) => {
         sun: '/img/emotions/sun_right.mp4',
         lightning: '/img/emotions/lightning_right.mp4',
         boat: '/img/emotions/boat_right.mp4',
+        star: '/img/emotions/star_right.mp4',
+        fire: '/img/emotions/star_right.mp4',
     }
 
     // Initialize video texture
     useEffect(() => {
         if (mode === 'scene' && !videoTexture) {
-            console.log('[RightPanel] Initializing video texture')
             const video = document.createElement('video')
             const selectedVideo = videoMap[placedObject] || videoMap['sun']
-            console.log('[RightPanel] Video selezionato:', selectedVideo)
             video.src = selectedVideo
             video.loop = true
             video.muted = true
@@ -55,7 +66,6 @@ export const RightPanel = (props) => {
             videoRef.current = video
 
             video.addEventListener('loadeddata', () => {
-                console.log('[RightPanel] Video loaded')
                 const texture = new VideoTexture(video)
                 texture.minFilter = THREE.LinearFilter
                 texture.magFilter = THREE.LinearFilter
@@ -63,7 +73,6 @@ export const RightPanel = (props) => {
             })
 
             video.play().then(() => {
-                console.log('[RightPanel] Video started playing')
             }).catch(error => {
                 console.error('[RightPanel] Error playing video:', error)
             })

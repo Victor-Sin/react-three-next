@@ -93,9 +93,15 @@ export const TextureProvider = ({ children }) => {
             '/img/splash/left.png',
             '/img/splash/right.png',
             '/img/splash/center.png',
-            '/img/center/map/chapter_one/map_centera.png',
-            '/img/center/map/chapter_one/map_lefta.png',
-            '/img/center/map/chapter_one/map_righta.png',
+            '/img/center/map/chapter_one/map_center.png',
+            '/img/center/map/chapter_one/map_left.png',
+            '/img/center/map/chapter_one/map_right.png',
+            '/img/center/map/chapter_one_night/map_center.png',
+            '/img/center/map/chapter_one_night/map_left.png',
+            '/img/center/map/chapter_one_night/map_right.png',
+            '/img/center/map/chapter_two/map_center.png',
+            '/img/center/map/chapter_two/map_left.png',
+            '/img/center/map/chapter_two/map_right.png',
         ]
 
         // Other panel textures
@@ -124,6 +130,7 @@ export const TextureProvider = ({ children }) => {
             '/img/object/boat.png',
             '/img/object/sunmoon.png',
             '/img/object/star.png',
+            '/img/object/fire.png'
         ]
 
         const loadAllTextures = async () => {

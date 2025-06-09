@@ -158,7 +158,6 @@ extend({ BurnTransitionMaterial })
  * Animation de transition d'entrée
  */
 const handleTransitionAnimationIn = ({ materialRef, dispatch, currentTransition, setTransitionAction, isMap = true }) => {
-  console.log('handleTransitionAnimationIn', currentTransition)
   // Prevent triggering if already transitioning
   if (currentTransition.isTransitioning) return;
   
@@ -208,7 +207,6 @@ const handleTransitionAnimationIn = ({ materialRef, dispatch, currentTransition,
  * Animation de transition de sortie
  */
 const handleTransitionAnimationOut = ({ materialRef, dispatch, currentTransition, setTransitionAction, isMap = true }) => {
-  console.log('handleTransitionAnimationOut', currentTransition)
   // Prevent triggering if already transitioning
   if (currentTransition.isTransitioning) return;
   

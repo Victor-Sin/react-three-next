@@ -3,16 +3,16 @@ import { useRef, useEffect, useState, useMemo } from 'react'
 import { useTextures } from '@/contexts/Texturecontext'
 import { useSelector, useDispatch } from 'react-redux'
 import { BurnTransition } from './BurnTransitionMaterial'
-import { resetScene, setMode, completeScene, setTransition } from '@/store/slices/centralSlice'
+import { resetScene, setMode, completeScene, startTransition, completeTransition, nextChapter } from '@/store/slices/centralSlice'
 import { VideoTexture } from 'three'
 import { Placeholder } from './Placeholder'
 import { useTexture } from '@react-three/drei'
 
 // Map textures for the triptych
 const mapTextures = {
-    left: '/img/center/map/chapter_one/map_lefta.png',
-    center: '/img/center/map/chapter_one/map_centera.png',
-    right: '/img/center/map/chapter_one/map_righta.png',
+    left: '/img/center/map/chapter_one/map_left.png',
+    center: '/img/center/map/chapter_one/map_center.png',
+    right: '/img/center/map/chapter_one/map_right.png',
     splash: '/img/splash/center.png'
 }
 
@@ -29,6 +29,7 @@ const cinematicVideos = {
     lightning: '/img/scenes/lightning.mp4',
     boat: '/img/scenes/boat.mp4',
     star: '/img/scenes/star.mp4',
+    fire: '/img/scenes/star.mp4',
     chapter_transition: '/img/scenes/chapter_transition.mp4'
 }
 
@@ -37,52 +38,35 @@ export const Scene = ({ scale = [1, 1, 1], children }) => {
     const videoRef = useRef(null)
     const { textures, isLoaded } = useTextures()
     const [currentTextureIndex, setCurrentTextureIndex] = useState(0)
-    const { mode, placedObject } = useSelector(state => state.central)
+    const { mode, placedObject, allScenesCompleted, chapter } = useSelector(state => state.central)
     const dispatch = useDispatch()
     const [cinematicTexture, setCinematicTexture] = useState(null)
 
     // Handle click in splashscreen mode
     const handleSplashClick = () => {
         if (mode === 'splashscreen') {
-            // First start the transition
-            dispatch(setTransition({
-                isTransitioning: true,
-                shouldTransition: true,
-                name: "central",
-                type: 'burn'
-            }))
+            dispatch(startTransition())
 
-            // Then change mode after a short delay to allow transition to start
             setTimeout(() => {
                 dispatch(setMode('map'))
-                // Reset transition state after mode change
-                setTimeout(() => {
-                    dispatch(setTransition({
-                        isTransitioning: false,
-                        shouldTransition: false,
-                        name: "central",
-                        type: 'burn'
-                    }))
-                }, 1000) // After transition completes
-            }, 100)
+                dispatch(completeTransition())
+            }, 1000)
         }
     }
 
     // Initialize cinematic video when an object is placed
     useEffect(() => {
         if (mode === 'scene' && placedObject && cinematicVideos[placedObject] && !cinematicTexture) {
-            console.log(`[Scene] Loading cinematic video for ${placedObject}`)
 
             const video = document.createElement('video')
             video.src = cinematicVideos[placedObject]
-            video.loop = false // Don't loop, we want it to end
-            video.muted = false // Allow audio for cinematics
+            video.loop = false
+            video.muted = false
             video.playsInline = true
             video.autoplay = true
             videoRef.current = video
 
             video.addEventListener('loadeddata', () => {
-                console.log(`[Scene] Cinematic video loaded for ${placedObject}`)
                 const texture = new VideoTexture(video)
                 texture.minFilter = THREE.LinearFilter
                 texture.magFilter = THREE.LinearFilter
@@ -90,17 +74,21 @@ export const Scene = ({ scale = [1, 1, 1], children }) => {
             })
 
             video.addEventListener('ended', () => {
-                console.log(`[Scene] Cinematic video ended for ${placedObject}`)
-                // Return to map when video ends
-                dispatch(resetScene())
-                dispatch(setMode('map'))
-                dispatch(completeScene(placedObject))
-                // setCinematicTexture(null)
+                dispatch(startTransition())
 
+                setTimeout(() => {
+                    if (placedObject === 'star') {
+                        dispatch(nextChapter())
+                    } else {
+                        dispatch(resetScene())
+                        dispatch(setMode('map'))
+                        dispatch(completeScene(placedObject))
+                    }
+                    dispatch(completeTransition())
+                }, 1000)
             })
 
             video.play().then(() => {
-                console.log(`[Scene] Cinematic video started playing for ${placedObject}`)
             }).catch(error => {
                 console.error(`[Scene] Error playing cinematic video for ${placedObject}:`, error)
             })
@@ -124,23 +112,26 @@ export const Scene = ({ scale = [1, 1, 1], children }) => {
             videoRef.current.pause()
             videoRef.current.src = ''
             videoRef.current.load()
-            // setCinematicTexture(null)
-
             setTimeout(() => {
                 setCinematicTexture(null)
             }, 1000)
-
         }
     }, [mode])
 
-    // Selezione texture come in RightPanel
+    // Get textures from context with memoization
     const { mapTexture, splashTexture } = useMemo(() => {
-        const mapTexture = textures['/img/center/map/chapter_one/map_centera.png']
-        const splashTexture = mode === 'splashscreen'
-            ? textures['/img/splash/center.png']
-            : textures['/img/center/map/chapter_one/map_centera.png']
+        let mapTexture
+        if (chapter === 1) {
+            mapTexture = textures['/img/center/map/chapter_two/map_center.png']
+        } else {
+            mapTexture = allScenesCompleted
+                ? textures['/img/center/map/chapter_one_night/map_center.png']
+                : textures['/img/center/map/chapter_one/map_center.png']
+        }
+        const splashTexture = textures['/img/splash/center.png']
+        console.log('[Scene] mapTexture', mapTexture, chapter)
         return { mapTexture, splashTexture }
-    }, [textures, mode])
+    }, [textures, allScenesCompleted, chapter])
 
     if (!isLoaded) return null
 
@@ -151,7 +142,7 @@ export const Scene = ({ scale = [1, 1, 1], children }) => {
                 <BurnTransition
                     tmp_name="central"
                     uTextureMapA={mode === 'splashscreen' ? splashTexture : mapTexture}
-                    uTextureMapB={splashTexture}
+                    uTextureMapB={mapTexture}
                     uTextureCinematic={cinematicTexture}
                 />
             </mesh>
