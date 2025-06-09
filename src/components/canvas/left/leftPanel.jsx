@@ -57,10 +57,10 @@ export const LeftPanel = (props) => {
             const video = document.createElement('video')
             const selectedVideo = videoMap[placedObject] || videoMap['sun']
             video.src = selectedVideo
-            video.loop = true
+            video.loop = false
             video.muted = true
             video.playsInline = true
-            video.autoplay = true
+            video.autoplay = false
             videoRef.current = video
 
             video.addEventListener('loadeddata', () => {
@@ -68,11 +68,16 @@ export const LeftPanel = (props) => {
                 texture.minFilter = THREE.LinearFilter
                 texture.magFilter = THREE.LinearFilter
                 setVideoTexture(texture)
-            })
 
-            video.play().then(() => {
-            }).catch(error => {
-                console.error('[LeftPanel] Error playing video:', error)
+                setTimeout(() => {
+                    video.play().then(() => {
+                        video.addEventListener('ended', () => {
+                            video.pause()
+                        }, { once: true })
+                    }).catch(error => {
+                        console.error('[LeftPanel] Error playing video:', error)
+                    })
+                }, 7000)
             })
         }
     }, [mode, videoTexture, placedObject])
