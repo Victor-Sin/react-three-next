@@ -95,7 +95,8 @@ export const Scene = ({ scale = [1, 1, 1], children }) => {
                 dispatch(resetScene())
                 dispatch(setMode('map'))
                 dispatch(completeScene(placedObject))
-                setCinematicTexture(null)
+                // setCinematicTexture(null)
+
             })
 
             video.play().then(() => {
@@ -123,7 +124,12 @@ export const Scene = ({ scale = [1, 1, 1], children }) => {
             videoRef.current.pause()
             videoRef.current.src = ''
             videoRef.current.load()
-            setCinematicTexture(null)
+            // setCinematicTexture(null)
+
+            setTimeout(() => {
+                setCinematicTexture(null)
+            }, 1000)
+
         }
     }, [mode])
 
@@ -146,7 +152,7 @@ export const Scene = ({ scale = [1, 1, 1], children }) => {
                     tmp_name="central"
                     uTextureMapA={mode === 'splashscreen' ? splashTexture : mapTexture}
                     uTextureMapB={splashTexture}
-                    uTextureCinematic={cinematicTexture || mapTexture}
+                    uTextureCinematic={cinematicTexture}
                 />
             </mesh>
             {mode === 'splashscreen' && (

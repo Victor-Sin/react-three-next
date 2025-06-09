@@ -80,7 +80,7 @@ export const RightPanel = (props) => {
             // Don't immediately set to null, let the transition complete first
             setTimeout(() => {
                 setVideoTexture(null)
-            }, 100)
+            }, 1000)
         }
     }, [mode])
 
@@ -113,7 +113,7 @@ export const RightPanel = (props) => {
                     tmp_name="right"
                     uTextureMapA={mode === 'splashscreen' ? blackTexture : mapTexture}
                     uTextureMapB={blackTexture}
-                    uTextureCinematic={videoTexture || mapTexture}
+                    uTextureCinematic={videoTexture}
                 />
             </mesh>
         </group>

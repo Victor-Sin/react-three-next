@@ -158,15 +158,13 @@ extend({ BurnTransitionMaterial })
  * Animation de transition d'entrée
  */
 const handleTransitionAnimationIn = ({ materialRef, dispatch, currentTransition, setTransitionAction, isMap = true }) => {
+  console.log('handleTransitionAnimationIn', currentTransition)
   // Prevent triggering if already transitioning
   if (currentTransition.isTransitioning) return;
   
   // Reset progress to initial state before starting new animation
-  if (isMap) {
-    materialRef.current.uProgressMap = 0;
-  } else {
+
     materialRef.current.uProgressCinematic = 0;
-  }
   
   dispatch(setTransitionAction({ 
     isTransitioning: true, 
@@ -177,8 +175,8 @@ const handleTransitionAnimationIn = ({ materialRef, dispatch, currentTransition,
   
   if (isMap) {
     GSAP.to(materialRef.current, {
-      uProgressMap: 1,
-      duration: 3,
+      uProgressCinematic: 1,
+      duration: 5,
       ease: 'ease.inOut',
       onComplete: () => {
         dispatch(setTransitionAction({ 
@@ -192,7 +190,7 @@ const handleTransitionAnimationIn = ({ materialRef, dispatch, currentTransition,
   } else {
     GSAP.to(materialRef.current, {
       uProgressCinematic: 1,
-      duration: 3,
+      duration: 5,
       ease: 'ease.inOut',
       onComplete: () => {
         dispatch(setTransitionAction({ 
@@ -210,15 +208,13 @@ const handleTransitionAnimationIn = ({ materialRef, dispatch, currentTransition,
  * Animation de transition de sortie
  */
 const handleTransitionAnimationOut = ({ materialRef, dispatch, currentTransition, setTransitionAction, isMap = true }) => {
+  console.log('handleTransitionAnimationOut', currentTransition)
   // Prevent triggering if already transitioning
   if (currentTransition.isTransitioning) return;
   
   // Reset progress to initial state before starting new animation
-  if (isMap) {
-    materialRef.current.uProgressMap = 1;
-  } else {
+
     materialRef.current.uProgressCinematic = 1;
-  }
   
   dispatch(setTransitionAction({ 
     isTransitioning: true, 
@@ -229,8 +225,8 @@ const handleTransitionAnimationOut = ({ materialRef, dispatch, currentTransition
   
   if (isMap) {
     GSAP.to(materialRef.current, {
-      uProgressMap: 0,
-      duration: 1,
+      uProgressCinematic: 0,
+      duration: 3,
       ease: 'ease.inOut',
       onComplete: () => {
         dispatch(setTransitionAction({ 
@@ -244,7 +240,7 @@ const handleTransitionAnimationOut = ({ materialRef, dispatch, currentTransition
   } else {
     GSAP.to(materialRef.current, {
       uProgressCinematic: 0,
-      duration: 1,
+      duration: 3,
       ease: 'ease.inOut',
       onComplete: () => {
         dispatch(setTransitionAction({ 
@@ -299,7 +295,7 @@ export const BurnTransition = ({ tmp_name, uTextureMapA, uTextureMapB, uTextureC
 
     if (isLaunchedRef.current) {
       // Reset transition state when mode changes
-      if (currentTransition.shouldTransition) {
+      if (mode === 'map') {
         handleTransitionAnimationOut({
           materialRef,
           dispatch,
