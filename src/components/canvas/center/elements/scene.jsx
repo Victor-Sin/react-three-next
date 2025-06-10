@@ -42,22 +42,9 @@ export const Scene = ({ scale = [1, 1, 1], children }) => {
     const dispatch = useDispatch()
     const [cinematicTexture, setCinematicTexture] = useState(null)
 
-    // Handle click in splashscreen mode
-    const handleSplashClick = () => {
-        if (mode === 'splashscreen') {
-            dispatch(startTransition())
-
-            setTimeout(() => {
-                dispatch(setMode('map'))
-                dispatch(completeTransition())
-            }, 1000)
-        }
-    }
-
     // Initialize cinematic video when an object is placed
     useEffect(() => {
         if (mode === 'scene' && placedObject && cinematicVideos[placedObject] && !cinematicTexture) {
-
             const video = document.createElement('video')
             video.src = cinematicVideos[placedObject]
             video.loop = false
@@ -146,16 +133,6 @@ export const Scene = ({ scale = [1, 1, 1], children }) => {
                     uTextureCinematic={cinematicTexture}
                 />
             </mesh>
-            {mode === 'splashscreen' && (
-                <Placeholder
-                    position={[0, 0, 0.001]}
-                    onClick={handleSplashClick}
-                    texture={textures['/img/object/sunmoon.png']}
-                    scale={1}
-                    opacity={1}
-                    size={[1, 1]}
-                />
-            )}
             {children}
         </group>
     )

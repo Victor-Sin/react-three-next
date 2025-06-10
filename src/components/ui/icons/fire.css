@@ -1,0 +1,32 @@
+
+@keyframes animate-svg-fill {
+    0% {
+        fill: transparent;
+    }
+
+    100% {
+        fill: var(--fill-color, #FF6B35);
+    }
+}
+
+.svg-elem-1 {
+    animation: animate-svg-fill 0.7s cubic-bezier(0.47, 0, 0.745, 0.715) 0.8s both;
+}
+
+.svg-elem-2 {
+    animation: animate-svg-fill 0.7s cubic-bezier(0.47, 0, 0.745, 0.715) 0.9s both;
+}
+
+/* Hover effect */
+svg:hover .svg-elem-1,
+svg:hover .svg-elem-2 {
+    animation: animate-svg-fill 0.7s cubic-bezier(0.47, 0, 0.745, 0.715) 0s both;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    svg {
+        width: 40px;
+        height: 40px;
+    }
+}

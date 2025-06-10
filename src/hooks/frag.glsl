@@ -94,5 +94,6 @@ void main() {
     noiseRiver = clamp(noiseRiver - noiseValue , 0.,.5);
     
     // Output the noise as a texture
-    gl_FragColor = vec4(noiseValue, noiseRiver, noiseValue, 1.0);
+//    gl_FragColor = vec4(noiseValue, noiseRiver, noiseValue, 1.0);
+gl_FragColor=vec4(0.0);
 }
