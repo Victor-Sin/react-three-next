@@ -57,9 +57,9 @@ export const Central = React.memo((props) => {
                 last={lastImage}
                 animationType={placedObject}
             >
-                {/* <Posable
+                <Posable
                     scale={defaultScale}
-                /> */}
+                />
             </Scene>
         </group>
     )

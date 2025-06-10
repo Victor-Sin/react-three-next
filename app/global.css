@@ -15,5 +15,17 @@
     margin: 0;
     padding: 0;
     overflow: hidden;
+    font-family: var(--font-chelsea-market), system-ui, sans-serif;
+  }
+
+  /* Font utility classes */
+  .chelsea-market-regular {
+    font-family: "Chelsea Market", system-ui;
+    font-weight: 400;
+    font-style: normal;
+  }
+
+  .font-mono {
+    font-family: var(--font-roboto-mono), Menlo, Monaco, monospace;
   }
 }

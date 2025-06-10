@@ -59,7 +59,7 @@ export const RightPanel = (props) => {
             const video = document.createElement('video')
             const selectedVideo = videoMap[placedObject] || videoMap['sun']
             video.src = selectedVideo
-            video.loop = false
+            video.loop = true
             video.muted = true
             video.playsInline = true
             video.autoplay = false

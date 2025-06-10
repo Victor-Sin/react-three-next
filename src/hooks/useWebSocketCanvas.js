@@ -7,7 +7,7 @@ import * as THREE from 'three';
  * @param {string} panelId - Identifier for this panel (left, center, right)
  * @param {number} fps - Target frames per second for sending updates
  */
-export const useWebSocketCanvas = (panelId, fps = 30) => {
+export const useWebSocketCanvas = (panelId, fps = 60) => {
   const socket = useRef(null);
   const lastSent = useRef(0);
   const interval = 1000 / fps;

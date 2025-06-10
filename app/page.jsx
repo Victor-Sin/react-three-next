@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useEffect, Suspense, useState } from 'react'
+import { useEffect, Suspense, useState, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useSelector, useDispatch } from 'react-redux'
 import { placeObject, setMode } from '@/store/slices/centralSlice'
@@ -13,6 +13,7 @@ import Lightning from '@/components/ui/icons/Lightning'
 import Star from '@/components/ui/icons/Star'
 import SunMoon from '@/components/ui/icons/SunMoon'
 import Image from 'next/image'
+import gsap from 'gsap'
 
 const View = dynamic(() => import('@/components/canvas/View').then((mod) => mod.View), {
   ssr: false,
@@ -43,6 +44,20 @@ export default function Page() {
   const [showSplash, setShowSplash] = useState(false)
   const [splashFadingOut, setSplashFadingOut] = useState(false)
 
+  // Refs for GSAP animations
+  const logoRef = useRef(null)
+  const title1Ref = useRef(null)
+  const title2Ref = useRef(null)
+  const sunIconRef = useRef(null)
+  const instructionsRef = useRef(null)
+
+  // Splash screen elements animation states
+  const [showLogo, setShowLogo] = useState(false)
+  const [showTitle1, setShowTitle1] = useState(false)
+  const [showTitle2, setShowTitle2] = useState(false)
+  const [showSunIcon, setShowSunIcon] = useState(false)
+  const [showInstructions, setShowInstructions] = useState(false)
+
   // Loading effect
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -60,8 +75,60 @@ export default function Page() {
       return () => clearTimeout(timer)
     } else {
       setShowSplash(false)
+      // Reset all animation states when leaving splash
+      setShowLogo(false)
+      setShowTitle1(false)
+      setShowTitle2(false)
+      setShowSunIcon(false)
+      setShowInstructions(false)
     }
   }, [isLoaded, mode])
+
+  // GSAP animations for splash screen elements
+  useEffect(() => {
+    if (showSplash && mode === 'splashscreen') {
+      // Create a timeline for sequential animations
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } })
+
+      // Logo animation
+      tl.fromTo(logoRef.current,
+        { opacity: 0, y: 20, scale: 0.95 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: "back.out(1.7)" }
+      )
+
+      // First title line
+      tl.fromTo(title1Ref.current,
+        { opacity: 0, y: 15 },
+        { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" },
+        "-=0.4" // Start slightly before previous animation ends
+      )
+
+      // Second title line
+      tl.fromTo(title2Ref.current,
+        { opacity: 0, y: 15 },
+        { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" },
+        "-=0.3"
+      )
+
+      // Sun icon with bounce effect
+      tl.fromTo(sunIconRef.current,
+        { opacity: 0, y: 30, scale: 0.9 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: "elastic.out(1, 0.5)" },
+        "-=0.2"
+      )
+
+      // Instructions text
+      tl.fromTo(instructionsRef.current,
+        { opacity: 0, y: 15 },
+        { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" },
+        "-=0.4"
+      )
+
+      return () => {
+        tl.kill() // Clean up timeline when component unmounts
+      }
+    }
+  }, [showSplash, mode])
 
   // Show placeholders logic
   useEffect(() => {
@@ -226,26 +293,41 @@ export default function Page() {
                   }`}
                 onClick={handleSplashClick}
               >
-                {/* Logo */}
-                <div className=" flex flex-col items-center justify-center text-[#B05A2A]">
-                  <Image
-                    src="/img/splash/logo.png"
-                    alt="Ix Chel Et Kin Logo"
-                    width={128}
-                    height={128}
-                    className="h-auto w-32 object-contain"
-                  />
-                  <div className=" text-[12px] font-bold">Le Mythe Maya de</div>
-                  <p className="text-[14px]">La Lune et du Soleil</p>
+                {/* Logo Section */}
+                <div className="flex flex-col items-center justify-center text-[#B05A2A]">
+                  {/* Logo Image */}
+                  <div ref={logoRef} className="opacity-0">
+                    <Image
+                      src="/img/splash/logo.png"
+                      alt="Ix Chel Et Kin Logo"
+                      width={128}
+                      height={128}
+                      className="h-auto w-32 object-contain"
+                    />
+                  </div>
 
+                  {/* First Title Line */}
+                  <div ref={title1Ref} className="text-[12px] font-bold opacity-0">
+                    Le Mythe Maya de
+                  </div>
+
+                  {/* Second Title Line */}
+                  <p ref={title2Ref} className="text-[14px] opacity-0">
+                    La Lune et du Soleil
+                  </p>
                 </div>
 
-                {/* SunMoon Button */}
+                {/* SunMoon Button Section */}
                 <div className="flex flex-col items-center justify-center">
-                  <div className="h-fit transition-all duration-300 hover:scale-110">
-                    <SunMoon width={100} height={100} />
+                  {/* Sun Icon */}
+                  <div ref={sunIconRef} className="h-fit opacity-0 transition-transform duration-300 hover:scale-110">
+                    <Sun width={100} height={100} />
                   </div>
-                  <p className="text-[14px] text-[#B05A2A]">Placer l’objet correspondant pour lancer l’expérience</p>
+
+                  {/* Instructions */}
+                  <p ref={instructionsRef} className="text-[14px] text-[#B05A2A] opacity-0">
+                    Placer l&apos;objet correspondant pour lancer l&apos;expérience
+                  </p>
                 </div>
               </div>
             )}
