@@ -4,7 +4,8 @@ import dynamic from 'next/dynamic'
 import { useEffect, Suspense, useState, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useSelector, useDispatch } from 'react-redux'
-import { placeObject, setMode } from '@/store/slices/centralSlice'
+import { placeObject, setMode, playSplashSound, playGoodSound } from '@/store/slices/centralSlice'
+import AudioManager from '@/components/AudioManager'
 import PlaceholderIcon from '@/components/ui/PlaceholderIcon'
 import Sun from '@/components/ui/icons/Sun'
 import Boat from '@/components/ui/icons/Boat'
@@ -144,6 +145,7 @@ export default function Page() {
 
   // Handle placeholder clicks
   const handlePlaceholderClick = (objectType) => {
+    dispatch(playGoodSound()) // Jouer good.mp3
     dispatch(placeObject(objectType))
     dispatch(setMode('scene'))
     setShowPlaceholders(false)
@@ -151,6 +153,7 @@ export default function Page() {
 
   // Handle star click for chapter progression
   const handleStarClick = () => {
+    dispatch(playGoodSound()) // Jouer good.mp3
     dispatch(placeObject('star'))
     dispatch(setMode('scene'))
     setShowPlaceholders(false)
@@ -159,17 +162,19 @@ export default function Page() {
   // Handle splash screen click
   const handleSplashClick = () => {
     if (mode === 'splashscreen' && !splashFadingOut) {
+      dispatch(playSplashSound()) // Jouer splash.mp3
       setSplashFadingOut(true)
       // Wait for fade-out animation to complete before changing mode
       setTimeout(() => {
         dispatch(setMode('map'))
         setSplashFadingOut(false)
-      }, 1000) // Match the transition duration
+      }, 3500) // Match the transition duration
     }
   }
 
   return (
     <>
+      <AudioManager />
       <div className='flex h-screen w-screen items-center justify-center bg-orange-100'>
         <div className='mx-auto flex w-full max-w-6xl gap-2'>
           {/* left */}
@@ -195,9 +200,8 @@ export default function Page() {
                       <PlaceholderIcon
                         x={75}
                         y={25}
-
                         onClick={() => handlePlaceholderClick('sun')}
-                        className="pointer-events-auto"
+                        className="pointer-events-auto animate-float animate-pulse"
                       >
                         <Sun width={40}
                           height={40} />
@@ -207,9 +211,8 @@ export default function Page() {
                       <PlaceholderIcon
                         x={55}
                         y={75}
-
                         onClick={() => handlePlaceholderClick('boat')}
-                        className="pointer-events-auto"
+                        className="pointer-events-auto animate-float animate-pulse"
                       >
                         <Boat width={40}
                           height={40} />
@@ -219,9 +222,8 @@ export default function Page() {
                       <PlaceholderIcon
                         x={40}
                         y={60}
-
                         onClick={() => handlePlaceholderClick('fire')}
-                        className="pointer-events-auto"
+                        className="pointer-events-auto animate-float animate-pulse"
                       >
                         <Fire width={20}
                           height={20} />
@@ -235,9 +237,8 @@ export default function Page() {
                       <PlaceholderIcon
                         x={70}
                         y={35}
-
                         onClick={() => handlePlaceholderClick('sun')}
-                        className="pointer-events-auto"
+                        className="pointer-events-auto animate-float animate-pulse"
                       >
                         <Sun width={40}
                           height={40} />
@@ -247,9 +248,8 @@ export default function Page() {
                       <PlaceholderIcon
                         x={40}
                         y={35}
-
                         onClick={() => handlePlaceholderClick('lightning')}
-                        className="pointer-events-auto"
+                        className="pointer-events-auto animate-float animate-pulse"
                       >
                         <Lightning width={40}
                           height={40} />
@@ -259,9 +259,8 @@ export default function Page() {
                       <PlaceholderIcon
                         x={70}
                         y={75}
-
                         onClick={() => handlePlaceholderClick('boat')}
-                        className="pointer-events-auto"
+                        className="pointer-events-auto animate-float animate-pulse"
                       >
                         <Boat width={40}
                           height={40} />

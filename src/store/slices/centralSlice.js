@@ -32,6 +32,14 @@ const initialState = {
     left: false,
     center: false,
     right: false
+  },
+  audio: {
+    shouldPlaySplash: false,
+    shouldPlayGood: false,
+    shouldPlayTuto: false,
+    ambientPlaying: false,
+    hasPlayedAmbientOnce: false,
+    playGood2: false
   }
 }
 
@@ -43,7 +51,6 @@ const centralSlice = createSlice({
       state.placedObject = action.payload
       state.placedObjects = [...state.placedObjects, action.payload]
       state.isStoryActive = true
-      state.mode = 'scene'
       state.storySegment = `${action.payload}_story`
       state.sunReaction = 'neutral'
       state.moonReaction = 'neutral'
@@ -141,13 +148,55 @@ const centralSlice = createSlice({
       state.moonReaction = null
     },
     setMode: (state, action) => {
+      const previousMode = state.mode
       state.mode = action.payload
+      
+      // Gestion audio basée sur les changements de mode
+      if (action.payload === 'map') {
+        // Jouer tuto.mp3 chaque fois qu'on va en mode map
+        state.audio.shouldPlayTuto = true
+        
+        // Gérer l'ambient sound
+        if (!state.audio.hasPlayedAmbientOnce) {
+          // Première fois en mode map - démarrer l'ambient
+          state.audio.ambientPlaying = true
+          state.audio.hasPlayedAmbientOnce = true
+        } else if (previousMode === 'scene') {
+          // Retour du mode scene vers map - reprendre l'ambient
+          state.audio.ambientPlaying = true
+        }
+      } else if (action.payload === 'scene' && previousMode === 'map') {
+        // Passage de map vers scene - pauser l'ambient
+        state.audio.ambientPlaying = false
+      }
     },
     setMeshLoaded: (state, action) => {
       const { panel, isLoaded } = action.payload
       if (panel in state.meshLoading) {
         state.meshLoading[panel] = isLoaded
       }
+    },
+    playSplashSound: (state) => {
+      state.audio.shouldPlaySplash = true
+    },
+    playGoodSound: (state) => {
+      state.audio.shouldPlayGood = true
+      state.audio.playGood2 = !state.audio.playGood2
+    },
+    playTutoSound: (state) => {
+      state.audio.shouldPlayTuto = true
+    },
+    playAmbientSound: (state) => {
+      state.audio.ambientPlaying = true
+      state.audio.hasPlayedAmbientOnce = true
+    },
+    pauseAmbientSound: (state) => {
+      state.audio.ambientPlaying = false
+    },
+    resetAudioFlags: (state) => {
+      state.audio.shouldPlaySplash = false
+      state.audio.shouldPlayGood = false
+      state.audio.shouldPlayTuto = false
     }
   }
 })
@@ -164,7 +213,13 @@ export const {
   resetProgress,
   nextChapter,
   setMode,
-  setMeshLoaded
+  setMeshLoaded,
+  playSplashSound,
+  playGoodSound,
+  playTutoSound,
+  playAmbientSound,
+  pauseAmbientSound,
+  resetAudioFlags
 } = centralSlice.actions
 
 export default centralSlice.reducer 
